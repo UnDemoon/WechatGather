@@ -1,2 +1,2 @@
-# QQGather
-手Q平台数据爬取
+# WechatGather
+微信小游戏平台卖量数据采集
