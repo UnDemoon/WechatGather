@@ -83,3 +83,9 @@ class MyDb(object):
         cursor.execute(sql)
         self.db.commit()
         return True
+
+    def runSql(self, sql_str: str):
+        cursor = self.db.cursor()
+        cursor.execute(sql_str)
+        self.db.commit()
+        return True

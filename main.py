@@ -16,7 +16,7 @@ from selenium.webdriver.support.wait import WebDriverWait
 #   qt5
 from PyQt5 import QtWidgets
 from PyQt5.Qt import QThread
-from PyQt5.QtCore import pyqtSignal, QObject, QDate, Qt, QSize, QItemSelectionModel
+from PyQt5.QtCore import pyqtSignal, QObject, QDate, Qt, QSize, QMimeData
 #   引入ui文件
 from home import Ui_MainWindow as Ui
 #   引入登录模块
@@ -51,12 +51,15 @@ class MyApp(QtWidgets.QMainWindow, Ui):
     def _initdata(self):
         data = self.db.listApps()
         self.listWidget.clear()
-        self.listWidget.setSelectionModel(QItemSelectionModel(QtWidgets.QAbstractItemView.SelectRows()))
+        # self.listWidget.setSelectionMode(QtWidgets.QAbstractItemView.MultiSelection)
         for idx, acc in enumerate(data):
             _id, appid, app_name, check = acc
             item = QtWidgets.QListWidgetItem()
             item.setText(str(idx+1) + "     "+app_name)
-            item.setCheckState(Qt.CheckState(0))
+            if int(check) == 1:
+                item.setCheckState(Qt.CheckState(2))
+            else:
+                item.setCheckState(Qt.CheckState(0))
             item.setData(1, appid)
             self.listWidget.addItem(item)
         today = QDate.currentDate()
@@ -97,14 +100,29 @@ class MyApp(QtWidgets.QMainWindow, Ui):
             tuple_list.append((item['appid'], item['app_name'], 0))
         self.db.saveItem(tuple_list)
         self._initdata()
+        QtWidgets.QMessageBox.information(self, '提示', '同步完成！', QtWidgets.QMessageBox.Yes) 
 
     #   按钮触发
     def start_run(self):
         dates = (self.DateEdit_2.date(), self.DateEdit.date())
-        selected_list = self.listWidget.selectedItems()
-        for item in selected_list:
-            print(item.text())
+        select_list = []
+        items_len = self.listWidget.count()
+        for index in range(0, items_len):
+            if self.listWidget.item(index).checkState() == Qt.CheckState(2):
+                select_list.append(self.listWidget.item(index).data(1))
+        self._checkByAry(select_list)
+        print(select_list)
 
+    #   根据appid更新check状态
+    def _checkByAry(self, appid_ary: tuple):
+        sql = '''
+        UPDATE app_info 
+        SET `check`= 1
+        WHERE
+            appid IN
+            {0}
+        '''.format(str(tuple(appid_ary)))
+        self.db.runSql(sql)
 
 # 浏览器开启
 def browserInit():
