@@ -56,7 +56,10 @@ class MyApp(QtWidgets.QMainWindow, Ui):
             _id, appid, app_name, check = acc
             item = QtWidgets.QListWidgetItem()
             item.setText(str(idx+1) + "     "+app_name)
-            item.setCheckState(Qt.CheckState(0))
+            if int(check) == 1:
+                item.setCheckState(Qt.CheckState(2))
+            else:
+                item.setCheckState(Qt.CheckState(0))
             item.setData(1, appid)
             self.listWidget.addItem(item)
         today = QDate.currentDate()
@@ -107,7 +110,19 @@ class MyApp(QtWidgets.QMainWindow, Ui):
         for index in range(0, items_len):
             if self.listWidget.item(index).checkState() == Qt.CheckState(2):
                 select_list.append(self.listWidget.item(index).data(1))
+        self._checkByAry(select_list)
+        print(select_list)
 
+    #   根据appid更新check状态
+    def _checkByAry(self, appid_ary: tuple):
+        sql = '''
+        UPDATE app_info 
+        SET `check`= 1
+        WHERE
+            appid IN
+            {0}
+        '''.format(str(tuple(appid_ary)))
+        self.db.runSql(sql)
 
 # 浏览器开启
 def browserInit():
