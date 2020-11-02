@@ -14,7 +14,7 @@ class MyDb(object):
                 "id" integer NOT NULL PRIMARY KEY AUTOINCREMENT,
                 "appid" text,
                 "app_name" text,
-                "check" integer
+                "check_state" integer
                 );
             '''
             # 主要就是上面的语句 : CREATE TABLE IF NOT EXISTS USER
@@ -38,7 +38,7 @@ class MyDb(object):
     def saveItem(self, data: list, tbl_name: str = 'app_info'):
         cursor = self.db.cursor()
         sql = '''
-        INSERT INTO {0} ( `appid`, `app_name`, `check` )
+        INSERT INTO {0} ( `appid`, `app_name`, `check_state` )
         VALUES
             {1}
         '''.format(tbl_name, ','.join(str(i) for i in data))

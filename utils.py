@@ -45,7 +45,7 @@ def dateToStamps(dateAry: tuple):
     return (start.toTime_t(), end.toTime_t())
 
 
-def logFile(strings: str, file='debug-log.log'):
+def logFile(strings: str, file='_debug-log.log'):
     """
     字符串写入文件
     """

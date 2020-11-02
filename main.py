@@ -9,7 +9,7 @@
 #  基础模块
 import sys
 import time
-import json
+# import json
 #   selenium相关
 from selenium import webdriver
 from selenium.webdriver.support.wait import WebDriverWait
@@ -22,10 +22,8 @@ from home import Ui_MainWindow as Ui
 #   引入登录模块
 import login as lgm
 #   引入requests类
-# from OppoGather import OppoGather as OppoGer
-# from VivoGather import VivoGather as VivoGer
-# from BdSpider import BdSpider as ToutiaoGer
 from HouyiApi import HouyiApi as Api
+from GameweixinGather import GameweixinGather as GameGather
 from MyDb import MyDb
 import utils as myTools
 
@@ -100,7 +98,7 @@ class MyApp(QtWidgets.QMainWindow, Ui):
             tuple_list.append((item['appid'], item['app_name'], 0))
         self.db.saveItem(tuple_list)
         self._initdata()
-        QtWidgets.QMessageBox.information(self, '提示', '同步完成！', QtWidgets.QMessageBox.Yes) 
+        QtWidgets.QMessageBox.information(self, '提示', '同步完成！', QtWidgets.QMessageBox.Yes)
 
     #   按钮触发
     def start_run(self):
@@ -111,18 +109,52 @@ class MyApp(QtWidgets.QMainWindow, Ui):
             if self.listWidget.item(index).checkState() == Qt.CheckState(2):
                 select_list.append(self.listWidget.item(index).data(1))
         self._checkByAry(select_list)
-        print(select_list)
+        self.browser, wait = browserInit()
+        while len(select_list) > 0:
+            appid = select_list.pop()
+            lgm.gameWeixin_lg(self.browser, URL['login'] + appid, wait)
+            myTools.logFile()
 
     #   根据appid更新check状态
-    def _checkByAry(self, appid_ary: tuple):
+    def _checkByAry(self, appid_ary: list):
         sql = '''
-        UPDATE app_info 
-        SET `check`= 1
+            UPDATE app_info
+            SET `check_state`= 0
+        '''
+        self.db.runSql(sql)
+        #   处理特殊情况 只有一个元素的元组转字符串时多一个 ,
+        appid_ary_str = "('" + appid_ary[0] + "')" if len(appid_ary) == 1 else str(tuple(appid_ary))
+        sql = '''
+        UPDATE app_info
+        SET `check_state`= 1
         WHERE
             appid IN
             {0}
-        '''.format(str(tuple(appid_ary)))
+        '''.format(appid_ary_str)
         self.db.runSql(sql)
+
+
+#   自定义的信号  完成信号
+class CompletionSignal(QObject):
+    completed = pyqtSignal(str)
+
+
+# 采集线程
+class GatherThread(QThread):
+    def __init__(self, cookies: dict, loginfo: str, dateary: tuple):
+        super().__init__()
+        self.cookies = cookies
+        self.info = loginfo
+        self.dateAry = dateary
+        self.sig = CompletionSignal()
+
+    def run(self):
+        api = Api()
+        #   开发平台数据采集
+        oGer_1 = GameGather(self.cookies, self.dateAry)
+        self.sig.completed.emit(self.info)
+
+
 
 # 浏览器开启
 def browserInit():
@@ -148,10 +180,7 @@ if __name__ == '__main__':
     now = time.localtime()
     t = time.strftime("%Y%m%d%H%M", now)
     URL = {
-        "oppo_1": "https://id.heytap.com/index.html",
-        "oppo_2": "https://id.oppo.com/index.html",
-        "vivo": "https://id.vivo.com.cn/?callback=https://dev.vivo.com.cn/home&_"+t+"#!/access/login",
-        "toutiao": "https://microapp.bytedance.com/",
+        "login": "https://game.weixin.qq.com/cgi-bin/minigame/static/channel_side/login.html?appid=",
     }
     try:
         RUN_EVN = sys.argv[1]
