@@ -26,7 +26,7 @@ def gameWeixin_lg(browser: object, url: str, wait: object):
     try:
         login_flag = login_flag or long_wait.until(
             EC.presence_of_element_located(
-                (By.CSS_SELECTOR, '[class~="userInfo_name"]')))
+                (By.CSS_SELECTOR, '.tips-wrap')))
     except BaseException:
         pass
     if login_flag:

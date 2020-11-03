@@ -9,7 +9,7 @@
 #  基础模块
 import sys
 import time
-# import json
+import json
 #   selenium相关
 from selenium import webdriver
 from selenium.webdriver.support.wait import WebDriverWait
@@ -92,10 +92,10 @@ class MyApp(QtWidgets.QMainWindow, Ui):
     #   同步功能
     def _synHouyi(self):
         self.db.clear()
-        res = self.api.pageData('list_apps')
+        res = self.api.pageData('adv_apps')
         tuple_list = []
         for item in res['Result'].get('List', []):
-            tuple_list.append((item['appid'], item['app_name'], 0))
+            tuple_list.append((item['wx_appid'], item['name'], 0))
         self.db.saveItem(tuple_list)
         self._initdata()
         QtWidgets.QMessageBox.information(self, '提示', '同步完成！', QtWidgets.QMessageBox.Yes)
@@ -112,8 +112,10 @@ class MyApp(QtWidgets.QMainWindow, Ui):
         self.browser, wait = browserInit()
         while len(select_list) > 0:
             appid = select_list.pop()
-            lgm.gameWeixin_lg(self.browser, URL['login'] + appid, wait)
-            myTools.logFile()
+            cookies = lgm.gameWeixin_lg(self.browser, URL['login'] + appid, wait)
+            myTools.logFile(json.dumps(cookies))
+            gather = GatherThread(appid, cookies, dates)
+            gather.start()
 
     #   根据appid更新check状态
     def _checkByAry(self, appid_ary: list):
@@ -141,19 +143,19 @@ class CompletionSignal(QObject):
 
 # 采集线程
 class GatherThread(QThread):
-    def __init__(self, cookies: dict, loginfo: str, dateary: tuple):
+    def __init__(self, appid: str, cookies: dict, dateary: tuple):
         super().__init__()
+        self.appid = appid
         self.cookies = cookies
-        self.info = loginfo
         self.dateAry = dateary
         self.sig = CompletionSignal()
 
     def run(self):
         api = Api()
         #   开发平台数据采集
-        oGer_1 = GameGather(self.cookies, self.dateAry)
+        gger = GameGather(self.appid, self.cookies, self.dateAry)
+        data = gger.startRun()
         self.sig.completed.emit(self.info)
-
 
 
 # 浏览器开启

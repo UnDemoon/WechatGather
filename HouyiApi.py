@@ -29,6 +29,8 @@ class HouyiApi:
             self.host + '/api/'+platform_type+'/accessToken.html',
             'list_apps':
             self.host + '/api/WeixinData/listAppInfo.html',
+            'adv_apps':
+            self.host + '/api/WeixinData/listAdvApp.html',
         }
         self.token = self.getToken(account, pwd)
 
@@ -71,7 +73,7 @@ class HouyiApi:
         return res
 
     #   多页数据获取
-    def pageData(self, data_type: str, pageindex: int = 1, pagesize: int = 1000):
+    def pageData(self, data_type: str, pageindex: int = 1, pagesize: int = 2000):
         #   构建数据
         data = {'token': self.token, 'pageindex': pageindex, 'pagesize': pagesize}
         #   发送
