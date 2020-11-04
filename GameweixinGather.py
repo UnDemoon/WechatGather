@@ -6,8 +6,10 @@
 @LastEditors: Demoon
 @LastEditTime: 2020-07-01 11:36:41
 '''
+import json
 import requests
 import time
+import urllib
 import utils as mytools
 
 
@@ -60,12 +62,13 @@ class GameweixinGather(object):
 
     #   run方法重写 start调用
     def startRun(self):
+        res_list = []
         channel_list = self._permList()
         staruix, enduix = mytools.dateToStamps(self.dateAry)
         duration_seconds = enduix - staruix
         for item in channel_list:
             param_data = {
-                    "need_app_info": "true",
+                    "need_app_info": True,
                     "appid": self.appid,
                     "sequence_index_list": [
                         {
@@ -116,7 +119,9 @@ class GameweixinGather(object):
                     "table_index_list": [],
                     "version": 0
                 }
-            self._channelData(param_data)
+            temp = self._channelData(param_data, item)
+            res_list += temp
+        return res_list
 
     #   设置session
     def _setSession(self, ck: dict, hd: dict):
@@ -132,7 +137,7 @@ class GameweixinGather(object):
     #   _get 方法
     def _get(self, url, para):
         res = self._subGet(url, para)
-        while (res.get('code') != 0):
+        while (res.get('errcode') != 0):
             mytools.randomSleep()
             res = self._subGet(url, para)
         return res
@@ -144,6 +149,7 @@ class GameweixinGather(object):
         res = {}
         try:
             r = self.req.get(url, params=para)
+            mytools.logFile(str(r.text))
             res = r.json()
         except BaseException as e:
             print(str(e))
@@ -153,18 +159,25 @@ class GameweixinGather(object):
     def _permList(self):
         conf = self.colloct_conf['perm_list']
         res = self._get(conf['url'], conf['params'])
+        mytools.logFile(json.dumps(res))
         res = res['data']['share_perm_data']['perm_list']
         return res
 
     # 获取活跃数据
-    def _channelData(self, param_data: dict):
+    def _channelData(self, param_data: dict, info: dict):
         conf = self.colloct_conf['channel_share_data']
         param = conf['params']
-        param['data'] = param_data
+        param['data'] = json.dumps(param_data)
+        # print(param)
         res = self._get(conf['url'], param)
+        mytools.logFile(json.dumps(res))
         res = res['data']['sequence_data_list'][0]['point_list']
         res = map(lambda x: {
             'day': x['label'],
             'active_user': x.get('value', 0),
+            'adv_appid': self.appid,
+            'out_group_id': info.get('out_group_id'),
+            'out_channel_id': info.get('out_channel_id'),
+            'channel_name': info.get('channel_name'),
             }, res)
         return res

@@ -64,12 +64,13 @@ class HouyiApi:
         return res
 
     #   上传数据重传机制
-    def subUp(self, url, data, time=3):
-        if time > 0:
+    def subUp(self, url, data, time_count=3):
+        count = time_count
+        if count > 0:
             res = self.post(url, data)
             if res.get('Status') != 200:
                 time.sleep(2)
-                res = self.subUp(url, data, time - 1)
+                res = self.subUp(url, data, count - 1)
         return res
 
     #   多页数据获取

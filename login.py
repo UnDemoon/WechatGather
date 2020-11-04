@@ -21,7 +21,7 @@ def gameWeixin_lg(browser: object, url: str, wait: object):
         # 当页面加载时间超过设定时间，通过js来stop，即可执行后续动作
         browser.execute_script("window.stop()")
     #   长等待获取是否获取用户名
-    long_wait = WebDriverWait(browser, 60)
+    long_wait = WebDriverWait(browser, 90)
     login_flag = False
     try:
         login_flag = login_flag or long_wait.until(

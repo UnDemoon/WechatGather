@@ -1,5 +1,6 @@
 '''
 @Description:
+
 @Version: 1.0
 @Autor: Demoon
 @Date: 1970-01-01 08:00:00
@@ -33,6 +34,7 @@ class MyApp(QtWidgets.QMainWindow, Ui):
         QtWidgets.QMainWindow.__init__(self)
         self.db = MyDb()
         self.api = Api()
+        self.bar_note = []
         self.browser = None
         self.threadPools = []
         Ui.__init__(self)
@@ -91,6 +93,7 @@ class MyApp(QtWidgets.QMainWindow, Ui):
 
     #   同步功能
     def _synHouyi(self):
+        self._barInfo("提示", "同步中，请稍后！")
         self.db.clear()
         res = self.api.pageData('adv_apps')
         tuple_list = []
@@ -99,6 +102,7 @@ class MyApp(QtWidgets.QMainWindow, Ui):
         self.db.saveItem(tuple_list)
         self._initdata()
         QtWidgets.QMessageBox.information(self, '提示', '同步完成！', QtWidgets.QMessageBox.Yes)
+        self._barInfo()
 
     #   按钮触发
     def start_run(self):
@@ -109,13 +113,20 @@ class MyApp(QtWidgets.QMainWindow, Ui):
             if self.listWidget.item(index).checkState() == Qt.CheckState(2):
                 select_list.append(self.listWidget.item(index).data(1))
         self._checkByAry(select_list)
-        self.browser, wait = browserInit()
-        while len(select_list) > 0:
-            appid = select_list.pop()
-            cookies = lgm.gameWeixin_lg(self.browser, URL['login'] + appid, wait)
-            myTools.logFile(json.dumps(cookies))
-            gather = GatherThread(appid, cookies, dates)
-            gather.start()
+        # self.browser, wait = browserInit()
+        # while len(select_list) > 0:
+        #     appid = select_list.pop()
+        #     cookies = lgm.gameWeixin_lg(self.browser, URL['login'] + appid, wait)
+        #     if not cookies:
+        #         QtWidgets.QMessageBox.warning(self, '错误', '获取登录信息失败', QtWidgets.QMessageBox.Yes)
+        #     myTools.logFile(json.dumps(cookies))
+        #     gather = GatherThread(appid, cookies, dates)
+        #     gather.start()
+
+        cookies = [{"domain": ".game.weixin.qq.com", "expiry": 1604566673, "httpOnly": "true", "name": "oauth_sid", "path": "/", "secure": "false", "value": "BgAAB-EX9dJUSvoFN5fpHu5SK-sdRj-DL5oHXU8gSwrUbMc"}]
+        appid = 'wx99d027c04ebc093c'
+        gather = GatherThread(appid, cookies, dates)
+        gather.start()
 
     #   根据appid更新check状态
     def _checkByAry(self, appid_ary: list):
@@ -135,6 +146,19 @@ class MyApp(QtWidgets.QMainWindow, Ui):
         '''.format(appid_ary_str)
         self.db.runSql(sql)
 
+    #   在bar上显示信息
+    def _barInfo(self, title: str = "", content: str = ""):
+        if not title and not content:
+            self.statusBar.clearMessage()
+            for wt in self.bar_note:
+                # self.statusBar.removeWidget(wt)
+                wt.setText("ssddsd")
+        else:
+            self.statusBar.showMessage(title, 0)  # 状态栏本身显示的信息 第二个参数是信息停留的时间，单位是毫秒，默认是0（0表示在下一个操作来临前一直显示）
+            comNum = QtWidgets.QLabel(content)
+            self.bar_note.append(comNum)
+            self.statusBar.addPermanentWidget(comNum, stretch=0)
+
 
 #   自定义的信号  完成信号
 class CompletionSignal(QObject):
@@ -153,9 +177,10 @@ class GatherThread(QThread):
     def run(self):
         api = Api()
         #   开发平台数据采集
-        gger = GameGather(self.appid, self.cookies, self.dateAry)
-        data = gger.startRun()
-        self.sig.completed.emit(self.info)
+        gameGather = GameGather(self.appid, self.cookies, self.dateAry)
+        data = gameGather.startRun()
+        print(json.dumps(data))
+        self.sig.completed.emit(None)
 
 
 # 浏览器开启
