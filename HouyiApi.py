@@ -31,10 +31,12 @@ class HouyiApi:
             self.host + '/api/WeixinData/listAppInfo.html',
             'adv_apps':
             self.host + '/api/WeixinData/listAdvApp.html',
+            'add_gamedata':
+            self.host + '/api/WeixinData/addGameChannelData.html',
         }
-        self.token = self.getToken(account, pwd)
+        self.token = self._getToken(account, pwd)
 
-    def getToken(self, acc, pwd):
+    def _getToken(self, acc, pwd):
         data = {
             'account': acc,
             'password': pwd,
@@ -60,17 +62,17 @@ class HouyiApi:
         #   构建数据
         data = {'token': self.token, 'data': post_data}
         #   发送
-        res = self.subUp(self.urls[data_type], data)
+        res = self._subUp(self.urls[data_type], data)
         return res
 
     #   上传数据重传机制
-    def subUp(self, url, data, time_count=3):
+    def _subUp(self, url, data, time_count=3):
         count = time_count
         if count > 0:
             res = self.post(url, data)
             if res.get('Status') != 200:
                 time.sleep(2)
-                res = self.subUp(url, data, count - 1)
+                res = self._subUp(url, data, count - 1)
         return res
 
     #   多页数据获取
@@ -78,5 +80,5 @@ class HouyiApi:
         #   构建数据
         data = {'token': self.token, 'pageindex': pageindex, 'pagesize': pagesize}
         #   发送
-        res = self.subUp(self.urls[data_type], data)
+        res = self._subUp(self.urls[data_type], data)
         return res

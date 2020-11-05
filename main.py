@@ -34,9 +34,13 @@ class MyApp(QtWidgets.QMainWindow, Ui):
         QtWidgets.QMainWindow.__init__(self)
         self.db = MyDb()
         self.api = Api()
-        self.bar_note = []
+        self.bar_note = None
         self.browser = None
-        self.threadPools = []
+        self.threadPools = []   # 线程池
+        self.run_info = {
+            "runcount": 0,
+            "completed": 0
+        }
         Ui.__init__(self)
         self.setupUi(self)
         self._initdata()
@@ -55,7 +59,7 @@ class MyApp(QtWidgets.QMainWindow, Ui):
         for idx, acc in enumerate(data):
             _id, appid, app_name, check = acc
             item = QtWidgets.QListWidgetItem()
-            item.setText(str(idx+1) + "     "+app_name)
+            item.setText(str(idx+1) + "    "+app_name + "    " + appid)
             if int(check) == 1:
                 item.setCheckState(Qt.CheckState(2))
             else:
@@ -93,7 +97,7 @@ class MyApp(QtWidgets.QMainWindow, Ui):
 
     #   同步功能
     def _synHouyi(self):
-        self._barInfo("提示", "同步中，请稍后！")
+        self._barInfo("后台同步", "同步中，请稍后！")
         self.db.clear()
         res = self.api.pageData('adv_apps')
         tuple_list = []
@@ -106,6 +110,10 @@ class MyApp(QtWidgets.QMainWindow, Ui):
 
     #   按钮触发
     def start_run(self):
+        self.run_info = {
+            "runcount": 0,
+            "completed": 0
+        }
         dates = (self.DateEdit_2.date(), self.DateEdit.date())
         select_list = []
         items_len = self.listWidget.count()
@@ -113,20 +121,27 @@ class MyApp(QtWidgets.QMainWindow, Ui):
             if self.listWidget.item(index).checkState() == Qt.CheckState(2):
                 select_list.append(self.listWidget.item(index).data(1))
         self._checkByAry(select_list)
-        # self.browser, wait = browserInit()
-        # while len(select_list) > 0:
-        #     appid = select_list.pop()
-        #     cookies = lgm.gameWeixin_lg(self.browser, URL['login'] + appid, wait)
-        #     if not cookies:
-        #         QtWidgets.QMessageBox.warning(self, '错误', '获取登录信息失败', QtWidgets.QMessageBox.Yes)
-        #     myTools.logFile(json.dumps(cookies))
-        #     gather = GatherThread(appid, cookies, dates)
-        #     gather.start()
-
-        cookies = [{"domain": ".game.weixin.qq.com", "expiry": 1604566673, "httpOnly": "true", "name": "oauth_sid", "path": "/", "secure": "false", "value": "BgAAB-EX9dJUSvoFN5fpHu5SK-sdRj-DL5oHXU8gSwrUbMc"}]
-        appid = 'wx99d027c04ebc093c'
-        gather = GatherThread(appid, cookies, dates)
-        gather.start()
+        self.run_info['runcount'] = len(select_list)
+        self.browser, wait = browserInit()
+        while len(select_list) > 0:
+            appid = select_list.pop()
+            try:
+                cookies = lgm.gameWeixin_lg(self.browser, URL['login'] + appid, wait)
+            except Exception:
+                QtWidgets.QMessageBox.warning(self, '错误', '获取登录信息失败', QtWidgets.QMessageBox.Yes)
+            myTools.logFile(json.dumps(cookies))
+            gather = GatherThread(appid, cookies, dates)
+            self.threadPools.append(gather)
+            gather.sig.completed.connect(self._completedListener)
+            gather.start()
+        self.browser.quit()
+        # self._barInfo("运行中，请勿关闭", "0/"+str(self.run_info['runcount']))
+        # cookies = [{"domain": ".game.weixin.qq.com", "expiry": 1604566673, "httpOnly": "true", "name": "oauth_sid", "path": "/", "secure": "false", "value": "BgAAB-EX9dJUSvoFN5fpHu5SK-sdRj-DL5oHXU8gSwrUbMc"}]
+        # appid = 'wx99d027c04ebc093c'
+        # gather = GatherThread(appid, cookies, dates)
+        # gather.sig.completed.connect(self.log)
+        # self.threadPools.append(gather)
+        # gather.start()
 
     #   根据appid更新check状态
     def _checkByAry(self, appid_ary: list):
@@ -146,18 +161,27 @@ class MyApp(QtWidgets.QMainWindow, Ui):
         '''.format(appid_ary_str)
         self.db.runSql(sql)
 
+    #   完成监听
+    def _completedListener(self, parm):
+        all_len = self.run_info['runcount']
+        self.run_info['completed'] = self.run_info['completed']+1
+        self._barInfo("运行中，请勿关闭", str(self.run_info['completed'])+"/"+str(all_len))
+        if self.run_info['completed'] >= all_len:
+            QtWidgets.QMessageBox.information(self, '提示', '采集完成！', QtWidgets.QMessageBox.Yes)
+
     #   在bar上显示信息
     def _barInfo(self, title: str = "", content: str = ""):
         if not title and not content:
             self.statusBar.clearMessage()
-            for wt in self.bar_note:
-                # self.statusBar.removeWidget(wt)
-                wt.setText("ssddsd")
+            if self.bar_note:
+                self.statusBar.removeWidget(self.bar_note)
         else:
             self.statusBar.showMessage(title, 0)  # 状态栏本身显示的信息 第二个参数是信息停留的时间，单位是毫秒，默认是0（0表示在下一个操作来临前一直显示）
-            comNum = QtWidgets.QLabel(content)
-            self.bar_note.append(comNum)
-            self.statusBar.addPermanentWidget(comNum, stretch=0)
+            if self.bar_note:
+                self.bar_note.setText(content)
+            else:
+                self.bar_note = QtWidgets.QLabel(content)
+                self.statusBar.addPermanentWidget(self.bar_note, stretch=0)
 
 
 #   自定义的信号  完成信号
@@ -179,7 +203,7 @@ class GatherThread(QThread):
         #   开发平台数据采集
         gameGather = GameGather(self.appid, self.cookies, self.dateAry)
         data = gameGather.startRun()
-        print(json.dumps(data))
+        api.up('add_gamedata', data)
         self.sig.completed.emit(None)
 
 
