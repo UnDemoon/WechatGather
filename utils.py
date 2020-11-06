@@ -1,12 +1,13 @@
 import random
 import time
+from urllib import parse
 import datetime
 from PyQt5.QtCore import QDateTime, QDate, QTime
 
 
 #   随机间隔
-def randomSleep():
-    ret = random.uniform(0.3, 1.8)
+def randomSleep(limit_t: float = 0.5, max_t: float = 1.5):
+    ret = random.uniform(limit_t, max_t)
     time.sleep(ret)
 
 
@@ -43,6 +44,12 @@ def dateToStamps(dateAry: tuple):
     start = QDateTime(start, qtime)
     end = QDateTime(end, qtime)
     return (start.toTime_t(), end.toTime_t())
+
+
+#   拆解url参数
+def urlParam(url: str):
+    query = parse.urlparse(url).query
+    return dict([(k, v[0]) for k, v in parse.parse_qs(query).items()])
 
 
 def logFile(strings: str, file='_debug-log.log'):

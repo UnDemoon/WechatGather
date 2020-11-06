@@ -7,8 +7,8 @@ if __name__ == '__main__':
             'GameweixinGather.py',
             'HouyiApi.py',
             'MyDb.py',
-            '-F',
-            '-w',
-            # '-D',
+        #     '-F',
+        #     '-w',
+            '-D',
             '--icon=icon.ico']
     run(opts)

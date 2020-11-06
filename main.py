@@ -21,7 +21,7 @@ from PyQt5.QtCore import pyqtSignal, QObject, QDate, Qt, QSize, QMimeData
 #   引入ui文件
 from home import Ui_MainWindow as Ui
 #   引入登录模块
-import login as lgm
+from login import MyBrowser
 #   引入requests类
 from HouyiApi import HouyiApi as Api
 from GameweixinGather import GameweixinGather as GameGather
@@ -110,38 +110,16 @@ class MyApp(QtWidgets.QMainWindow, Ui):
 
     #   按钮触发
     def start_run(self):
+        dates = (self.DateEdit_2.date(), self.DateEdit.date())
+        sigGetCookies = GetCookiesSignal()
+        sigGetCookies.getCookies.connect(self._getCookiesListener)
+        # lgm.gameWeixin_lg(browserInit(), sigGetCookies, dates)
+        self.browser = MyBrowser(sigGetCookies, dates)
+        self.browser.start()
         self.run_info = {
             "runcount": 0,
             "completed": 0
         }
-        dates = (self.DateEdit_2.date(), self.DateEdit.date())
-        select_list = []
-        items_len = self.listWidget.count()
-        for index in range(0, items_len):
-            if self.listWidget.item(index).checkState() == Qt.CheckState(2):
-                select_list.append(self.listWidget.item(index).data(1))
-        self._checkByAry(select_list)
-        self.run_info['runcount'] = len(select_list)
-        self.browser, wait = browserInit()
-        while len(select_list) > 0:
-            appid = select_list.pop()
-            try:
-                cookies = lgm.gameWeixin_lg(self.browser, URL['login'] + appid, wait)
-            except Exception:
-                QtWidgets.QMessageBox.warning(self, '错误', '获取登录信息失败', QtWidgets.QMessageBox.Yes)
-            myTools.logFile(json.dumps(cookies))
-            gather = GatherThread(appid, cookies, dates)
-            self.threadPools.append(gather)
-            gather.sig.completed.connect(self._completedListener)
-            gather.start()
-        self.browser.quit()
-        # self._barInfo("运行中，请勿关闭", "0/"+str(self.run_info['runcount']))
-        # cookies = [{"domain": ".game.weixin.qq.com", "expiry": 1604566673, "httpOnly": "true", "name": "oauth_sid", "path": "/", "secure": "false", "value": "BgAAB-EX9dJUSvoFN5fpHu5SK-sdRj-DL5oHXU8gSwrUbMc"}]
-        # appid = 'wx99d027c04ebc093c'
-        # gather = GatherThread(appid, cookies, dates)
-        # gather.sig.completed.connect(self.log)
-        # self.threadPools.append(gather)
-        # gather.start()
 
     #   根据appid更新check状态
     def _checkByAry(self, appid_ary: list):
@@ -160,6 +138,13 @@ class MyApp(QtWidgets.QMainWindow, Ui):
             {0}
         '''.format(appid_ary_str)
         self.db.runSql(sql)
+
+    #   获取cookies监听
+    def _getCookiesListener(self, info: dict):
+        gather = GatherThread(info['appid'], info['cookies'], info['dates'])
+        self.threadPools.append(gather)
+        gather.sig.completed.connect(self._completedListener)
+        gather.start()
 
     #   完成监听
     def _completedListener(self, parm):
@@ -189,6 +174,11 @@ class CompletionSignal(QObject):
     completed = pyqtSignal(str)
 
 
+#   获取到cookies信号
+class GetCookiesSignal(QObject):
+    getCookies = pyqtSignal(dict)
+
+
 # 采集线程
 class GatherThread(QThread):
     def __init__(self, appid: str, cookies: dict, dateary: tuple):
@@ -201,26 +191,25 @@ class GatherThread(QThread):
     def run(self):
         api = Api()
         #   开发平台数据采集
-        gameGather = GameGather(self.appid, self.cookies, self.dateAry)
-        data = gameGather.startRun()
-        api.up('add_gamedata', data)
+        # gameGather = GameGather(self.appid, self.cookies, self.dateAry)
+        # data = gameGather.startRun()
+        # api.up('add_gamedata', data)
         self.sig.completed.emit(None)
 
 
 # 浏览器开启
-def browserInit():
-    # 实例化一个chrome浏览器
-    chrome_options = webdriver.ChromeOptions()
-    # options.add_argument(".\ChromePortable\App\Chrome\chrome.exe");
-    chrome_options.binary_location = ".\\ChromePortable\\App\\Chrome\\chrome.exe"
-    # chrome_options = webdriver.ChromeOptions()
-    # chrome_options.add_argument('--headless')
-    # chrome_options.add_argument('--disable-gpu')
-    # browser = webdriver.Chrome(options=chrome_options)
-    browser = webdriver.Chrome(options=chrome_options)
-    # 设置等待超时
-    wait = WebDriverWait(browser, 5)
-    return (browser, wait)
+# def browserInit():
+#     # 实例化一个chrome浏览器
+#     chrome_options = webdriver.ChromeOptions()
+#     # options.add_argument(".\ChromePortable\App\Chrome\chrome.exe");
+#     chrome_options.binary_location = ".\\ChromePortable\\App\\Chrome\\chrome.exe"
+#     # chrome_options = webdriver.ChromeOptions()
+#     # chrome_options.add_argument('--headless')
+#     # chrome_options.add_argument('--disable-gpu')
+#     # browser = webdriver.Chrome(options=chrome_options)
+#     browser = webdriver.Chrome(options=chrome_options)
+#     # 设置等待超时
+#     return browser
 
 
 if __name__ == '__main__':
