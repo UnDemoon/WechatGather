@@ -57,6 +57,13 @@
          </widget>
         </item>
         <item>
+         <widget class="QPushButton" name="pushButton_4">
+          <property name="text">
+           <string>跳过</string>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QPushButton" name="pushButton_3">
           <property name="text">
            <string>同步</string>

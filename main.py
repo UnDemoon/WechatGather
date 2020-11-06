@@ -11,21 +11,22 @@
 import sys
 import time
 import json
-#   selenium相关
 from selenium import webdriver
-from selenium.webdriver.support.wait import WebDriverWait
 #   qt5
 from PyQt5 import QtWidgets
 from PyQt5.Qt import QThread
-from PyQt5.QtCore import pyqtSignal, QObject, QDate, Qt, QSize, QMimeData
+from PyQt5.QtCore import QDate, Qt
 #   引入ui文件
 from home import Ui_MainWindow as Ui
 #   引入登录模块
-import login as lgm
+# import login as lgm
+from MyBrowser import MyBrowser
 #   引入requests类
 from HouyiApi import HouyiApi as Api
 from GameweixinGather import GameweixinGather as GameGather
 from MyDb import MyDb
+#   自动有信号集合
+import MySignals as MySigs
 import utils as myTools
 
 
@@ -35,7 +36,7 @@ class MyApp(QtWidgets.QMainWindow, Ui):
         self.db = MyDb()
         self.api = Api()
         self.bar_note = None
-        self.browser = None
+        self.sig = MySigs.NextUrlSignal()
         self.threadPools = []   # 线程池
         self.run_info = {
             "runcount": 0,
@@ -122,19 +123,20 @@ class MyApp(QtWidgets.QMainWindow, Ui):
                 select_list.append(self.listWidget.item(index).data(1))
         self._checkByAry(select_list)
         self.run_info['runcount'] = len(select_list)
-        self.browser, wait = browserInit()
+        # self.select_list = select_list
+        # self.date_ary = dates
+        #   启动浏览器线程
+        # self.browser = MyBrowser(browserInit())
+        
+        # self.browser.started.connect(self._browserIsReady)
+        # self.browser.start()
+        browser = browserInit()
         while len(select_list) > 0:
             appid = select_list.pop()
-            try:
-                cookies = lgm.gameWeixin_lg(self.browser, URL['login'] + appid, wait)
-            except Exception:
-                QtWidgets.QMessageBox.warning(self, '错误', '获取登录信息失败', QtWidgets.QMessageBox.Yes)
-            myTools.logFile(json.dumps(cookies))
-            gather = GatherThread(appid, cookies, dates)
-            self.threadPools.append(gather)
-            gather.sig.completed.connect(self._completedListener)
-            gather.start()
-        self.browser.quit()
+            mybro = MyBrowser(browser, URL['login'], appid, dates)
+            mybro.sig.getCookies.connect(self._getCookiesListener)
+            mybro.start()
+            # self.browser.gameWeixin_lg(URL['login'], appid, dates)
         # self._barInfo("运行中，请勿关闭", "0/"+str(self.run_info['runcount']))
         # cookies = [{"domain": ".game.weixin.qq.com", "expiry": 1604566673, "httpOnly": "true", "name": "oauth_sid", "path": "/", "secure": "false", "value": "BgAAB-EX9dJUSvoFN5fpHu5SK-sdRj-DL5oHXU8gSwrUbMc"}]
         # appid = 'wx99d027c04ebc093c'
@@ -161,6 +163,20 @@ class MyApp(QtWidgets.QMainWindow, Ui):
         '''.format(appid_ary_str)
         self.db.runSql(sql)
 
+    #   cookies监听
+    def _getCookiesListener(self, cookies: dict, appid: str, date_ary: tuple):
+        gather = GatherThread(appid, cookies, date_ary)
+        gather.sig.completed.connect(self._completedListener)
+        self.threadPools.append(gather)
+        gather.start()
+
+    #   _browserIsReady
+    def _browserIsReady(self):
+        select_list = self.select_list
+        while len(select_list) > 0:
+            appid = select_list.pop()
+            self.browser.gameWeixin_lg(URL['login'], appid, self.date_ary)
+
     #   完成监听
     def _completedListener(self, parm):
         all_len = self.run_info['runcount']
@@ -184,11 +200,6 @@ class MyApp(QtWidgets.QMainWindow, Ui):
                 self.statusBar.addPermanentWidget(self.bar_note, stretch=0)
 
 
-#   自定义的信号  完成信号
-class CompletionSignal(QObject):
-    completed = pyqtSignal(str)
-
-
 # 采集线程
 class GatherThread(QThread):
     def __init__(self, appid: str, cookies: dict, dateary: tuple):
@@ -196,7 +207,7 @@ class GatherThread(QThread):
         self.appid = appid
         self.cookies = cookies
         self.dateAry = dateary
-        self.sig = CompletionSignal()
+        self.sig = MySigs.CompletionSignal()
 
     def run(self):
         api = Api()
@@ -207,7 +218,7 @@ class GatherThread(QThread):
         self.sig.completed.emit(None)
 
 
-# 浏览器开启
+# # 浏览器开启
 def browserInit():
     # 实例化一个chrome浏览器
     chrome_options = webdriver.ChromeOptions()
@@ -219,8 +230,8 @@ def browserInit():
     # browser = webdriver.Chrome(options=chrome_options)
     browser = webdriver.Chrome(options=chrome_options)
     # 设置等待超时
-    wait = WebDriverWait(browser, 5)
-    return (browser, wait)
+    # wait = WebDriverWait(browser, 5)
+    return browser
 
 
 if __name__ == '__main__':
