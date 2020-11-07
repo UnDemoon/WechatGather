@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>333</width>
-    <height>432</height>
+    <width>339</width>
+    <height>419</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -42,27 +42,7 @@
        </layout>
       </item>
       <item>
-       <widget class="QLineEdit" name="lineEdit"/>
-      </item>
-      <item>
-       <widget class="QListWidget" name="listWidget"/>
-      </item>
-      <item>
        <layout class="QHBoxLayout" name="horizontalLayout_2">
-        <item>
-         <widget class="QPushButton" name="pushButton_2">
-          <property name="text">
-           <string>清空</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="pushButton_3">
-          <property name="text">
-           <string>同步</string>
-          </property>
-         </widget>
-        </item>
         <item>
          <widget class="QPushButton" name="pushButton">
           <property name="text">
@@ -71,6 +51,19 @@
          </widget>
         </item>
        </layout>
+      </item>
+      <item>
+       <widget class="QLabel" name="label">
+        <property name="text">
+         <string>采集记录</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLineEdit" name="lineEdit"/>
+      </item>
+      <item>
+       <widget class="QListWidget" name="listWidget"/>
       </item>
      </layout>
     </item>

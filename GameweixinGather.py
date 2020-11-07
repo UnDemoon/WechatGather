@@ -1,5 +1,5 @@
 '''
-@Description: vivo数据采集类
+@Description: 数据采集类
 @Version: 1.0
 @Autor: Demoon
 @Date: 1970-01-01 08:00:00
@@ -9,7 +9,7 @@
 import json
 import requests
 import time
-import urllib
+# import urllib
 import utils as mytools
 
 

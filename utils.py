@@ -46,6 +46,11 @@ def dateToStamps(dateAry: tuple):
     return (start.toTime_t(), end.toTime_t())
 
 
+#   时间戳转 Qtime
+def unixTimeDate(unix_time: int):
+    return QDateTime.fromSecsSinceEpoch(unix_time)
+
+
 #   拆解url参数
 def urlParam(url: str):
     query = parse.urlparse(url).query

@@ -38,7 +38,7 @@ class MyDb(object):
     def saveItem(self, data: list, tbl_name: str = 'app_info'):
         cursor = self.db.cursor()
         sql = '''
-        INSERT INTO {0} ( `appid`, `app_name`, `check_state` )
+        INSERT INTO {0} ( `url`, `update_at` )
         VALUES
             {1}
         '''.format(tbl_name, ','.join(str(i) for i in data))
@@ -46,16 +46,16 @@ class MyDb(object):
         self.db.commit()
         return True
 
-    def find(self, key: str, value: str, tbl_name: str = 'app_info'):
+    def find(self, key: str, value: str, condition: str = '=', tbl_name: str = 'app_info'):
         cursor = self.db.cursor()
         sql = '''
         SELECT
-            * 
+            *
         FROM
             {0}
         WHERE
-            {1} = '{2}'
-                '''.format(tbl_name, key, value)
+            {1} {2} '{3}'
+                '''.format(tbl_name, key, condition, value)
         res = cursor.execute(sql)
         querys = res.fetchall()
         return querys
@@ -86,6 +86,6 @@ class MyDb(object):
 
     def runSql(self, sql_str: str):
         cursor = self.db.cursor()
-        cursor.execute(sql_str)
-        self.db.commit()
-        return True
+        res = cursor.execute(sql_str)
+        querys = res.fetchall()
+        return querys

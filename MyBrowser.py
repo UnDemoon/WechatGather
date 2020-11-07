@@ -1,5 +1,5 @@
 '''
-@Description: 
+@Description:  浏览器线程
 @Version: 1.0
 @Autor: Demoon
 @Date: 1970-01-01 08:00:00
@@ -33,13 +33,13 @@ class MyBrowser(QThread):
         long_wait = WebDriverWait(browser, 60 * 1)
         login_flag = False
         try:
-            print(1)
             login_flag = login_flag or long_wait.until(
                 EC.presence_of_element_located(
-                    (By.CSS_SELECTOR, '.header__logo')))
+                    (By.CSS_SELECTOR, '.tips-wrap')))
             cookies = browser.get_cookies()
             url_param = myTools.urlParam(browser.current_url)
             self.sig.getCookies.emit({
+                'url': browser.current_url,
                 'cookies': cookies,
                 'appid': url_param['appid'],
                 'dates': self.date_ary
