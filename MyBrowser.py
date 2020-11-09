@@ -19,13 +19,19 @@ class MyBrowser(QThread):
         super().__init__()
         self.sig = sigGetCookies
         self.date_ary = date_ary
+        self.browser = None
+
+    #   下一个url
+    def changeUrl(self, url: str):
+        # print("changeUrl", url)
+        self.browser.get(url)
 
     #   run
     def run(self):
-        browser = self.browserInit()
-        res = self.waitLogin(browser)
+        self.browser = self.browserInit()
+        res = self.waitLogin(self.browser)
         while res:
-            res = self.waitLogin(browser)
+            res = self.waitLogin(self.browser)
 
     #   等待登录
     def waitLogin(self, browser):
@@ -48,6 +54,10 @@ class MyBrowser(QThread):
         except BaseException:
             pass
         return True
+
+    #   关闭
+    def closeBrower(self):
+        self.browser.quit()
 
     #   浏览器初始化
     def browserInit(self):      # 实例化一个chrome浏览器

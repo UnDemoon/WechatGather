@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>339</width>
-    <height>419</height>
+    <width>1030</width>
+    <height>359</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -44,9 +44,23 @@
       <item>
        <layout class="QHBoxLayout" name="horizontalLayout_2">
         <item>
+         <widget class="QCheckBox" name="checkBox">
+          <property name="text">
+           <string>自动采集</string>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QPushButton" name="pushButton">
           <property name="text">
            <string>开始</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="pushButton_2">
+          <property name="text">
+           <string>跳过</string>
           </property>
          </widget>
         </item>

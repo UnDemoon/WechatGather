@@ -41,10 +41,13 @@ class MyApp(QtWidgets.QMainWindow, Ui):
         self.api = Api()
         self.bar_note = None
         self.browser = None
+        self.run_urls = []  # 要采集的url集合
         self.threadPools = []   # 线程池
+        self.sig = MySigs.ChangeUrlSignal()     # 改变url信号
         # 方法
         self._initdata()
         self.DateEdit.dateChanged.connect(self._timeInit)
+        self.pushButton_2.clicked.connect(self.autoRun)
         self.pushButton.clicked.connect(self.start_run)
 
     #   数据初始化
@@ -76,26 +79,66 @@ class MyApp(QtWidgets.QMainWindow, Ui):
     #   同步功能
     def _synDb(self):
         self.listWidget.clear()
-        today = QDate.currentDate()
-        tuple_uix = myTools.dateToStamps((today, today))
-        log_list = self.db.find('update_at', tuple_uix[0], '>=', 'run_log')
+        sql = '''
+            SELECT
+                *
+            FROM
+                run_log
+            GROUP BY
+                url
+            ORDER BY
+            update_at DESC
+            '''
+        log_list = self.db.runSql(sql)
         for log in log_list:
             _id, _url, _at = log
             item = QtWidgets.QListWidgetItem()
             update_time = myTools.unixTimeDate(_at)
-            item.setText(_url+"    "+update_time.toString('HH:mm:ss'))
+            item.setText(_url+"    "+update_time.toString('yyyy-mm-dd HH:mm:ss'))
             item.setData(1, _id)
             self.listWidget.addItem(item)
         self._barInfo("今日采集总计", str(len(log_list)))
 
+    #   下一个
+    def _nextUrl(self, url: str):
+        self.sig.changeUrl.emit(url)
+
     #   按钮触发
     def start_run(self):
+        self.run_urls = []
+        if self.browser:
+            self.browser.closeBrower()
+        #   获取时间
         dates = (self.DateEdit_2.date(), self.DateEdit.date())
+        #   定义信号 链接槽函数
         sigGetCookies = MySigs.GetCookiesSignal()
         sigGetCookies.getCookies.connect(self._getCookiesListener)
-        # lgm.gameWeixin_lg(browserInit(), sigGetCookies, dates)
         self.browser = MyBrowser(sigGetCookies, dates)
+        self.sig.changeUrl.connect(self.browser.changeUrl)
         self.browser.start()
+        #   判断运行类型
+        if self.checkBox.isChecked():
+            sql = '''
+            SELECT
+                url
+            FROM
+                run_log
+            GROUP BY
+                url
+            '''
+            urls = self.db.runSql(sql)
+            self.run_urls = list(map(lambda x: x[0], urls))
+            time.sleep(8)
+            self.autoRun()
+
+    #   自动运行
+    def autoRun(self):
+        if len(self.run_urls) > 0:
+            url = self.run_urls.pop()
+            self._nextUrl(url)
+        else:
+            self._nextUrl("data:,")
+            QtWidgets.QMessageBox.information(self, '提示', '没有了！', QtWidgets.QMessageBox.Yes)
 
     #   根据appid更新check状态
     def _checkByAry(self, appid_ary: list):
@@ -125,23 +168,31 @@ class MyApp(QtWidgets.QMainWindow, Ui):
     #   完成监听
     def _completedListener(self, parm):
         url = parm.strip()
-        today = QDate.currentDate()
-        tuple_uix = myTools.dateToStamps((today, today))
         sql = '''
         SELECT
             *
         FROM
             run_log
         WHERE
-            update_at >= '{0}'
             AND url = '{1}'
-        '''.format(str(tuple_uix[0]), url)
+        '''.format(url)
         log_list = self.db.runSql(sql)
         if len(log_list) <= 0:
             now = QDateTime.currentDateTime()
             unix_time = now.toSecsSinceEpoch()
             self.db.saveItem([(parm, str(unix_time))], 'run_log')
-            QtWidgets.QMessageBox.information(self, '提示', '采集完成！', QtWidgets.QMessageBox.Yes)
+            self._synDb()
+        else:
+            _id = log_list[0][0]
+            now = QDateTime.currentDateTime()
+            unix_time = now.toSecsSinceEpoch()
+            sql = '''
+            UPDATE run_log
+            SET update_at = '{0}'
+            WHERE
+                id = '{1}'
+            '''.format(unix_time, _id)
+            self.db.runSql(sql)
             self._synDb()
 
     #   在bar上显示信息
@@ -172,9 +223,9 @@ class GatherThread(QThread):
     def run(self):
         api = Api()
         #   数据采集
-        gameGather = GameGather(self.appid, self.cookies, self.dateAry)
-        data = gameGather.startRun()
-        api.up('add_gamedata', data)
+        # gameGather = GameGather(self.appid, self.cookies, self.dateAry)
+        # data = gameGather.startRun()
+        # api.up('add_gamedata', data)
         self.sig.completed.emit(self.url)
 
 

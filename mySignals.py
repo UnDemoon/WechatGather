@@ -18,3 +18,8 @@ class CompletionSignal(QObject):
 #   获取到cookies信号
 class GetCookiesSignal(QObject):
     getCookies = pyqtSignal(dict)
+
+
+#   改变url信号
+class ChangeUrlSignal(QObject):
+    changeUrl = pyqtSignal(str)
