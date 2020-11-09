@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(333, 432)
+        MainWindow.resize(638, 532)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.horizontalLayout = QtWidgets.QHBoxLayout(self.centralwidget)
@@ -50,6 +50,9 @@ class Ui_MainWindow(object):
         self.pushButton_3 = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton_3.setObjectName("pushButton_3")
         self.horizontalLayout_2.addWidget(self.pushButton_3)
+        self.pushButton_4 = QtWidgets.QPushButton(self.centralwidget)
+        self.pushButton_4.setObjectName("pushButton_4")
+        self.horizontalLayout_2.addWidget(self.pushButton_4)
         self.pushButton = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton.setObjectName("pushButton")
         self.horizontalLayout_2.addWidget(self.pushButton)
@@ -70,4 +73,5 @@ class Ui_MainWindow(object):
         self.Label.setText(_translate("MainWindow", "结束"))
         self.pushButton_2.setText(_translate("MainWindow", "清空"))
         self.pushButton_3.setText(_translate("MainWindow", "同步"))
+        self.pushButton_4.setText(_translate("MainWindow", "跳过"))
         self.pushButton.setText(_translate("MainWindow", "开始"))

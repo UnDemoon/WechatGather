@@ -21,35 +21,41 @@ from PyQt5.QtCore import pyqtSignal, QObject, QDate, Qt, QSize, QMimeData
 #   引入ui文件
 from home import Ui_MainWindow as Ui
 #   引入登录模块
-import login as lgm
+from MyBrowser import MyBrowser
 #   引入requests类
 from HouyiApi import HouyiApi as Api
 from GameweixinGather import GameweixinGather as GameGather
 from MyDb import MyDb
 import utils as myTools
+import mySignals as mySigs
 
 
 class MyApp(QtWidgets.QMainWindow, Ui):
     def __init__(self):
+        #   UI
         QtWidgets.QMainWindow.__init__(self)
+        Ui.__init__(self)
+        self.setupUi(self)
+        self._initdata()
+        #   属性
         self.db = MyDb()
         self.api = Api()
-        self.bar_note = None
-        self.browser = None
+        self.bar_note = None  # 底部提示
+        self.browser = None   # 浏览器
         self.threadPools = []   # 线程池
+        self.sig = mySigs.ChangeUrlSignal()     # 改变url信号
         self.run_info = {
             "runcount": 0,
             "completed": 0
         }
-        Ui.__init__(self)
-        self.setupUi(self)
-        self._initdata()
+        #   信号槽绑定
         self.listWidget.itemClicked.connect(self._onoffCheck)
         self.pushButton_2.clicked.connect(self._clearCheck)
         self.lineEdit.textChanged.connect(self._search)
         self.DateEdit.dateChanged.connect(self._timeInit)
         self.pushButton_3.clicked.connect(self._synHouyi)
         self.pushButton.clicked.connect(self.start_run)
+        self.pushButton_4.clicked.connect(self._nextUrl)
 
     #   数据初始化
     def _initdata(self):
@@ -108,6 +114,10 @@ class MyApp(QtWidgets.QMainWindow, Ui):
         QtWidgets.QMessageBox.information(self, '提示', '同步完成！', QtWidgets.QMessageBox.Yes)
         self._barInfo()
 
+    #   下一个
+    def _nextUrl(self):
+        self.sig.changeUrl.emit("11111")
+
     #   按钮触发
     def start_run(self):
         self.run_info = {
@@ -115,6 +125,9 @@ class MyApp(QtWidgets.QMainWindow, Ui):
             "completed": 0
         }
         dates = (self.DateEdit_2.date(), self.DateEdit.date())
+        myBrowser = MyBrowser(mySigs.GetCookiesSignal(), dates)
+        self.sig.changeUrl.connect(myBrowser.changeUrl)
+        myBrowser.start()
         select_list = []
         items_len = self.listWidget.count()
         for index in range(0, items_len):
@@ -122,26 +135,8 @@ class MyApp(QtWidgets.QMainWindow, Ui):
                 select_list.append(self.listWidget.item(index).data(1))
         self._checkByAry(select_list)
         self.run_info['runcount'] = len(select_list)
-        self.browser, wait = browserInit()
-        while len(select_list) > 0:
-            appid = select_list.pop()
-            try:
-                cookies = lgm.gameWeixin_lg(self.browser, URL['login'] + appid, wait)
-            except Exception:
-                QtWidgets.QMessageBox.warning(self, '错误', '获取登录信息失败', QtWidgets.QMessageBox.Yes)
-            myTools.logFile(json.dumps(cookies))
-            gather = GatherThread(appid, cookies, dates)
-            self.threadPools.append(gather)
-            gather.sig.completed.connect(self._completedListener)
-            gather.start()
-        self.browser.quit()
-        # self._barInfo("运行中，请勿关闭", "0/"+str(self.run_info['runcount']))
-        # cookies = [{"domain": ".game.weixin.qq.com", "expiry": 1604566673, "httpOnly": "true", "name": "oauth_sid", "path": "/", "secure": "false", "value": "BgAAB-EX9dJUSvoFN5fpHu5SK-sdRj-DL5oHXU8gSwrUbMc"}]
-        # appid = 'wx99d027c04ebc093c'
-        # gather = GatherThread(appid, cookies, dates)
-        # gather.sig.completed.connect(self.log)
-        # self.threadPools.append(gather)
-        # gather.start()
+        self._nextUrl()
+
 
     #   根据appid更新check状态
     def _checkByAry(self, appid_ary: list):
@@ -184,11 +179,6 @@ class MyApp(QtWidgets.QMainWindow, Ui):
                 self.statusBar.addPermanentWidget(self.bar_note, stretch=0)
 
 
-#   自定义的信号  完成信号
-class CompletionSignal(QObject):
-    completed = pyqtSignal(str)
-
-
 # 采集线程
 class GatherThread(QThread):
     def __init__(self, appid: str, cookies: dict, dateary: tuple):
@@ -196,7 +186,7 @@ class GatherThread(QThread):
         self.appid = appid
         self.cookies = cookies
         self.dateAry = dateary
-        self.sig = CompletionSignal()
+        self.sig = mySigs.CompletionSignal()
 
     def run(self):
         api = Api()
@@ -207,22 +197,6 @@ class GatherThread(QThread):
         self.sig.completed.emit(None)
 
 
-# 浏览器开启
-def browserInit():
-    # 实例化一个chrome浏览器
-    chrome_options = webdriver.ChromeOptions()
-    # options.add_argument(".\ChromePortable\App\Chrome\chrome.exe");
-    chrome_options.binary_location = ".\\ChromePortable\\App\\Chrome\\chrome.exe"
-    # chrome_options = webdriver.ChromeOptions()
-    # chrome_options.add_argument('--headless')
-    # chrome_options.add_argument('--disable-gpu')
-    # browser = webdriver.Chrome(options=chrome_options)
-    browser = webdriver.Chrome(options=chrome_options)
-    # 设置等待超时
-    wait = WebDriverWait(browser, 5)
-    return (browser, wait)
-
-
 if __name__ == '__main__':
     # 定义为全局变量，方便其他模块使用
     global URL, RUN_EVN
@@ -231,7 +205,7 @@ if __name__ == '__main__':
     now = time.localtime()
     t = time.strftime("%Y%m%d%H%M", now)
     URL = {
-        "login": "https://game.weixin.qq.com/cgi-bin/minigame/static/channel_side/login.html?appid=",
+        "login": "https://game.weixin.qq.com/cgi-bin/minigame/static/channel_side/index.html?appid=",
     }
     try:
         RUN_EVN = sys.argv[1]
