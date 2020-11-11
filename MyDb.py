@@ -38,7 +38,7 @@ class MyDb(object):
     def saveItem(self, data: list, tbl_name: str = 'app_info'):
         cursor = self.db.cursor()
         sql = '''
-        INSERT INTO {0} ( `url`, `update_at` )
+        INSERT INTO {0} ( `app_name`, `url`, `update_at` )
         VALUES
             {1}
         '''.format(tbl_name, ','.join(str(i) for i in data))
@@ -84,8 +84,16 @@ class MyDb(object):
         self.db.commit()
         return True
 
-    def runSql(self, sql_str: str):
+    #   取出结果sql
+    def runSqlRes(self, sql_str: str):
         cursor = self.db.cursor()
         res = cursor.execute(sql_str)
         querys = res.fetchall()
         return querys
+
+    #   无结果提交
+    def runSql(self, sql_str: str):
+        cursor = self.db.cursor()
+        cursor.execute(sql_str)
+        self.db.commit()
+        return True

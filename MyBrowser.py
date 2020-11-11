@@ -15,11 +15,12 @@ from selenium import webdriver
 
 
 class MyBrowser(QThread):
-    def __init__(self, sigGetCookies: object, date_ary: tuple):
+    def __init__(self, sigGetCookies: object, date_ary: tuple, init_url: str = ''):
         super().__init__()
         self.sig = sigGetCookies
         self.date_ary = date_ary
         self.browser = None
+        self.init_url = init_url
 
     #   下一个url
     def changeUrl(self, url: str):
@@ -29,6 +30,8 @@ class MyBrowser(QThread):
     #   run
     def run(self):
         self.browser = self.browserInit()
+        if self.init_url:
+            self.browser.get(self.init_url)
         res = self.waitLogin(self.browser)
         while res:
             res = self.waitLogin(self.browser)
@@ -37,11 +40,11 @@ class MyBrowser(QThread):
     def waitLogin(self, browser):
         #   长等待获取是否获取用户名
         long_wait = WebDriverWait(browser, 60 * 1)
-        login_flag = False
         try:
-            login_flag = login_flag or long_wait.until(
+            long_wait.until(
                 EC.presence_of_element_located(
-                    (By.CSS_SELECTOR, '.tips-wrap')))
+                    # (By.CSS_SELECTOR, '.tips-wrap')))
+                    (By.CSS_SELECTOR, '.header__logo')))  # 测试用
             cookies = browser.get_cookies()
             url_param = myTools.urlParam(browser.current_url)
             self.sig.getCookies.emit({
@@ -57,7 +60,8 @@ class MyBrowser(QThread):
 
     #   关闭
     def closeBrower(self):
-        self.browser.quit()
+        if self.browser:
+            self.browser.quit()
 
     #   浏览器初始化
     def browserInit(self):      # 实例化一个chrome浏览器

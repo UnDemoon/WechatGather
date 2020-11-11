@@ -12,7 +12,7 @@ from PyQt5.QtCore import pyqtSignal, QObject
 
 #   自定义的信号  完成信号
 class CompletionSignal(QObject):
-    completed = pyqtSignal(str)
+    completed = pyqtSignal(dict)
 
 
 #   获取到cookies信号

@@ -14,6 +14,7 @@ import time
 from PyQt5 import QtWidgets
 from PyQt5.Qt import QThread
 from PyQt5.QtCore import QDate, Qt, QDateTime
+from PyQt5.QtGui import QColor
 #   引入ui文件
 from home import Ui_MainWindow as Ui
 #   引入浏览器线程类
@@ -78,6 +79,8 @@ class MyApp(QtWidgets.QMainWindow, Ui):
 
     #   同步功能
     def _synDb(self):
+        #   获取今天时间戳
+        today_uix = QDateTime(QDate.currentDate()).toSecsSinceEpoch()
         self.listWidget.clear()
         sql = '''
             SELECT
@@ -87,17 +90,19 @@ class MyApp(QtWidgets.QMainWindow, Ui):
             GROUP BY
                 url
             ORDER BY
-            update_at DESC
+            `id` ASC
             '''
-        log_list = self.db.runSql(sql)
-        for log in log_list:
-            _id, _url, _at = log
+        log_list = self.db.runSqlRes(sql)
+        for idx, log in enumerate(log_list):
+            _id, _name, _url, _at = log
             item = QtWidgets.QListWidgetItem()
             update_time = myTools.unixTimeDate(_at)
-            item.setText(_url+"    "+update_time.toString('yyyy-mm-dd HH:mm:ss'))
+            item.setText(str(idx+1)+"    "+_name+"    "+_url+"    "+update_time.toString('yyyy-mm-dd HH:mm:ss'))
             item.setData(1, _id)
+            if int(_at) > today_uix:
+                item.setBackground(QColor('silver'))
             self.listWidget.addItem(item)
-        self._barInfo("今日采集总计", str(len(log_list)))
+        # self._barInfo("今日采集总计", str(len(log_list)))
 
     #   下一个
     def _nextUrl(self, url: str):
@@ -108,14 +113,9 @@ class MyApp(QtWidgets.QMainWindow, Ui):
         self.run_urls = []
         if self.browser:
             self.browser.closeBrower()
+        init_url = ''
         #   获取时间
         dates = (self.DateEdit_2.date(), self.DateEdit.date())
-        #   定义信号 链接槽函数
-        sigGetCookies = MySigs.GetCookiesSignal()
-        sigGetCookies.getCookies.connect(self._getCookiesListener)
-        self.browser = MyBrowser(sigGetCookies, dates)
-        self.sig.changeUrl.connect(self.browser.changeUrl)
-        self.browser.start()
         #   判断运行类型
         if self.checkBox.isChecked():
             sql = '''
@@ -126,10 +126,15 @@ class MyApp(QtWidgets.QMainWindow, Ui):
             GROUP BY
                 url
             '''
-            urls = self.db.runSql(sql)
+            urls = self.db.runSqlRes(sql)
             self.run_urls = list(map(lambda x: x[0], urls))
-            time.sleep(8)
-            self.autoRun()
+            init_url = self.run_urls.pop()
+        #   定义信号 链接槽函数
+        sigGetCookies = MySigs.GetCookiesSignal()
+        sigGetCookies.getCookies.connect(self._getCookiesListener)
+        self.browser = MyBrowser(sigGetCookies, dates, init_url)
+        self.sig.changeUrl.connect(self.browser.changeUrl)
+        self.browser.start()
 
     #   自动运行
     def autoRun(self):
@@ -166,21 +171,31 @@ class MyApp(QtWidgets.QMainWindow, Ui):
         gather.start()
 
     #   完成监听
-    def _completedListener(self, parm):
-        url = parm.strip()
+    # parm = {
+    #     "url": "",
+    #     "appid": ""
+    # }
+    def _completedListener(self, parm: dict):
+        url = parm['url'].strip()
+        app_name = ''
+        #   查询appid对应游戏名称
+        res = self.api.up('adv_apps', [parm['appid']])
+        for app in res['Result']['List']:
+            if app['wx_appid'] == parm['appid']:
+                app_name = app['name']
         sql = '''
         SELECT
             *
         FROM
             run_log
         WHERE
-            AND url = '{1}'
+            url = '{0}'
         '''.format(url)
-        log_list = self.db.runSql(sql)
+        log_list = self.db.runSqlRes(sql)
         if len(log_list) <= 0:
             now = QDateTime.currentDateTime()
             unix_time = now.toSecsSinceEpoch()
-            self.db.saveItem([(parm, str(unix_time))], 'run_log')
+            self.db.saveItem([(app_name, url, str(unix_time))], 'run_log')
             self._synDb()
         else:
             _id = log_list[0][0]
@@ -188,12 +203,14 @@ class MyApp(QtWidgets.QMainWindow, Ui):
             unix_time = now.toSecsSinceEpoch()
             sql = '''
             UPDATE run_log
-            SET update_at = '{0}'
+            SET app_name = '{0}',
+                update_at = '{1}'
             WHERE
-                id = '{1}'
-            '''.format(unix_time, _id)
+                id = '{2}'
+            '''.format(app_name, unix_time, _id)
             self.db.runSql(sql)
             self._synDb()
+        self.autoRun()
 
     #   在bar上显示信息
     def _barInfo(self, title: str = "", content: str = ""):
@@ -226,7 +243,10 @@ class GatherThread(QThread):
         # gameGather = GameGather(self.appid, self.cookies, self.dateAry)
         # data = gameGather.startRun()
         # api.up('add_gamedata', data)
-        self.sig.completed.emit(self.url)
+        self.sig.completed.emit({
+            'url': self.url,
+            'appid': self.appid,
+        })
 
 
 # 浏览器开启
