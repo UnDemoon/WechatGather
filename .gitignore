@@ -18,3 +18,4 @@ dist/
 .vs
 *.zip
 *.db
+*-bak

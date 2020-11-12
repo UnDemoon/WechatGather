@@ -47,7 +47,10 @@ class MyApp(QtWidgets.QMainWindow, Ui):
         self.sig = MySigs.ChangeUrlSignal()     # 改变url信号
         # 方法
         self._initdata()
+        self.listWidget.itemClicked.connect(self._onoffCheck)
         self.DateEdit.dateChanged.connect(self._timeInit)
+        self.pushButton_3.clicked.connect(lambda: self._changeAllCheck(0))
+        self.pushButton_4.clicked.connect(lambda: self._changeAllCheck(2))
         self.pushButton_2.clicked.connect(self.autoRun)
         self.pushButton.clicked.connect(self.start_run)
 
@@ -65,17 +68,23 @@ class MyApp(QtWidgets.QMainWindow, Ui):
         endDate = self.DateEdit.date()
         self.DateEdit_2.setDate(endDate.addDays(-5))
 
-    #   清楚所有选项
-    def _clearCheck(self):
+    #   清楚所有选项 0全不选 2全选
+    def _changeAllCheck(self, check_state: int):
         items_len = self.listWidget.count()
         for index in range(0, items_len):
-            self.listWidget.item(index).setCheckState(Qt.CheckState(0))
+            self.listWidget.item(index).setCheckState(Qt.CheckState(check_state))
 
     #   搜索功能
     def _search(self, text: str):
         item_list = self.listWidget.findItems(text, Qt.MatchContains)
         if len(item_list) > 0:
             self.listWidget.scrollToItem(item_list[0],  QtWidgets.QAbstractItemView.PositionAtTop)
+
+    # 处理点击
+    def _onoffCheck(self, click_item: QtWidgets.QListWidgetItem):
+        state = 2 if int(click_item.checkState()) == 0 else 0
+        click_item.setCheckState(Qt.CheckState(state))
+        return True
 
     #   同步功能
     def _synDb(self):
@@ -97,8 +106,9 @@ class MyApp(QtWidgets.QMainWindow, Ui):
             _id, _name, _url, _at = log
             item = QtWidgets.QListWidgetItem()
             update_time = myTools.unixTimeDate(_at)
-            item.setText(str(idx+1)+"    "+_name+"    "+_url+"    "+update_time.toString('yyyy-mm-dd HH:mm:ss'))
-            item.setData(1, _id)
+            item.setText(str(idx+1)+"    "+_name+"    "+_url+"    "+update_time.toString('yyyy-MM-dd HH:mm:ss'))
+            item.setCheckState(Qt.CheckState(2))
+            item.setData(1, _url)
             if int(_at) > today_uix:
                 item.setBackground(QColor('silver'))
             self.listWidget.addItem(item)
@@ -118,16 +128,12 @@ class MyApp(QtWidgets.QMainWindow, Ui):
         dates = (self.DateEdit_2.date(), self.DateEdit.date())
         #   判断运行类型
         if self.checkBox.isChecked():
-            sql = '''
-            SELECT
-                url
-            FROM
-                run_log
-            GROUP BY
-                url
-            '''
-            urls = self.db.runSqlRes(sql)
-            self.run_urls = list(map(lambda x: x[0], urls))
+            select_list = []
+            items_len = self.listWidget.count()
+            for index in range(0, items_len):
+                if self.listWidget.item(index).checkState() == Qt.CheckState(2):
+                    select_list.append(self.listWidget.item(index).data(1))
+            self.run_urls = select_list
             init_url = self.run_urls.pop()
         #   定义信号 链接槽函数
         sigGetCookies = MySigs.GetCookiesSignal()
@@ -240,9 +246,9 @@ class GatherThread(QThread):
     def run(self):
         api = Api()
         #   数据采集
-        # gameGather = GameGather(self.appid, self.cookies, self.dateAry)
-        # data = gameGather.startRun()
-        # api.up('add_gamedata', data)
+        gameGather = GameGather(self.appid, self.cookies, self.dateAry)
+        data = gameGather.startRun()
+        api.up('add_gamedata', data)
         self.sig.completed.emit({
             'url': self.url,
             'appid': self.appid,

@@ -43,8 +43,8 @@ class MyBrowser(QThread):
         try:
             long_wait.until(
                 EC.presence_of_element_located(
-                    # (By.CSS_SELECTOR, '.tips-wrap')))
-                    (By.CSS_SELECTOR, '.header__logo')))  # 测试用
+                    (By.CSS_SELECTOR, '.tips-wrap')))
+                    # (By.CSS_SELECTOR, '.header__logo')))  # 测试用
             cookies = browser.get_cookies()
             url_param = myTools.urlParam(browser.current_url)
             self.sig.getCookies.emit({
