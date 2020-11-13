@@ -103,9 +103,10 @@ class MyApp(QtWidgets.QMainWindow, Ui):
             '''
         log_list = self.db.runSqlRes(sql)
         for idx, log in enumerate(log_list):
-            _id, _name, _url, _at = log
+            _id, _name, _appid, _at = log
             item = QtWidgets.QListWidgetItem()
             update_time = myTools.unixTimeDate(_at)
+            _url = 'https://game.weixin.qq.com/cgi-bin/minigame/static/channel_side/index.html?appid='+_appid
             item.setText(str(idx+1)+"    "+_name+"    "+_url+"    "+update_time.toString('yyyy-MM-dd HH:mm:ss'))
             item.setCheckState(Qt.CheckState(2))
             item.setData(1, _url)
@@ -182,7 +183,7 @@ class MyApp(QtWidgets.QMainWindow, Ui):
     #     "appid": ""
     # }
     def _completedListener(self, parm: dict):
-        url = parm['url'].strip()
+        url = parm['appid']
         app_name = ''
         #   查询appid对应游戏名称
         res = self.api.up('adv_apps', [parm['appid']])
@@ -201,7 +202,7 @@ class MyApp(QtWidgets.QMainWindow, Ui):
         if len(log_list) <= 0:
             now = QDateTime.currentDateTime()
             unix_time = now.toSecsSinceEpoch()
-            self.db.saveItem([(app_name, url, str(unix_time))], 'run_log')
+            self.db.saveItem([(app_name, parm['appid'], str(unix_time))], 'run_log')
             self._synDb()
         else:
             _id = log_list[0][0]

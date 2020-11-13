@@ -149,7 +149,7 @@ class GameweixinGather(object):
         res = {}
         try:
             r = self.req.get(url, params=para)
-            mytools.logFile(str(r.text))
+            # mytools.logFile(str(r.text))
             res = r.json()
         except BaseException as e:
             print(str(e))
@@ -159,7 +159,7 @@ class GameweixinGather(object):
     def _permList(self):
         conf = self.colloct_conf['perm_list']
         res = self._get(conf['url'], conf['params'])
-        mytools.logFile(json.dumps(res))
+        # mytools.logFile(json.dumps(res))
         res = res['data']['share_perm_data']['perm_list']
         return res
 
@@ -170,7 +170,7 @@ class GameweixinGather(object):
         param['data'] = json.dumps(param_data)
         # print(param)
         res = self._get(conf['url'], param)
-        mytools.logFile(json.dumps(res))
+        # mytools.logFile(json.dumps(res))
         res = res['data']['sequence_data_list'][0]['point_list']
         res = map(lambda x: {
             'day': x['label'],
