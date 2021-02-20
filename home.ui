@@ -51,6 +51,18 @@
          </widget>
         </item>
         <item>
+         <widget class="QPushButton" name="pushButton_5">
+          <property name="styleSheet">
+           <string notr="true">background-color: #e45151;
+			color: white;
+			border-color: white;</string>
+          </property>
+          <property name="text">
+           <string>删除</string>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QPushButton" name="pushButton_3">
           <property name="text">
            <string>清空</string>

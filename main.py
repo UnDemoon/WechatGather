@@ -4,12 +4,13 @@
 @Version: 1.0
 @Autor: Demoon
 @Date: 1970-01-01 08:00:00
-@LastEditors: Demoon
-@LastEditTime: 2020-07-01 11:13:46
+LastEditors: Please set LastEditors
+LastEditTime: 2021-02-19 17:03:49
 '''
 #  基础模块
 import sys
 import time
+import logging
 #   qt5
 from PyQt5 import QtWidgets
 from PyQt5.Qt import QThread
@@ -29,6 +30,8 @@ from MyDb import MyDb
 import mySignals as MySigs
 #   工具集
 import utils as myTools
+
+# logging.basicConfig(level=0)
 
 
 class MyApp(QtWidgets.QMainWindow, Ui):
@@ -51,6 +54,7 @@ class MyApp(QtWidgets.QMainWindow, Ui):
         self.DateEdit.dateChanged.connect(self._timeInit)
         self.pushButton_3.clicked.connect(lambda: self._changeAllCheck(0))
         self.pushButton_4.clicked.connect(lambda: self._changeAllCheck(2))
+        self.pushButton_5.clicked.connect(self._delChecked)
         self.pushButton_2.clicked.connect(self.autoRun)
         self.pushButton.clicked.connect(self.start_run)
 
@@ -73,6 +77,28 @@ class MyApp(QtWidgets.QMainWindow, Ui):
         items_len = self.listWidget.count()
         for index in range(0, items_len):
             self.listWidget.item(index).setCheckState(Qt.CheckState(check_state))
+
+    #   删除选择项
+    def _delChecked(self):
+        select_list = []
+        items_len = self.listWidget.count()
+        for index in range(0, items_len):
+            if self.listWidget.item(index).checkState() == Qt.CheckState(2):
+                select_list.append(self.listWidget.item(index).data(1))
+        if len(select_list) <= 0:
+            return True
+        #   操作数据库
+        ids_str = "(" + str(select_list[0]) + ")" if len(select_list) == 1 else str(tuple(select_list))
+        sql = '''
+        DELETE
+        FROM
+            {0}
+        WHERE
+            {1} IN {2}
+        '''.format('run_log', 'id', ids_str)
+        self.db.runSql(sql)
+        self._synDb()
+        self._changeAllCheck(0)
 
     #   搜索功能
     def _search(self, text: str):
@@ -107,9 +133,10 @@ class MyApp(QtWidgets.QMainWindow, Ui):
             item = QtWidgets.QListWidgetItem()
             update_time = myTools.unixTimeDate(_at)
             _url = 'https://game.weixin.qq.com/cgi-bin/minigame/static/channel_side/index.html?appid='+_appid
+            item.setData(2, _url)
+            item.setData(1, _id)
             item.setText(str(idx+1)+"    "+_name+"    "+_url+"    "+update_time.toString('yyyy-MM-dd HH:mm:ss'))
             item.setCheckState(Qt.CheckState(2))
-            item.setData(1, _url)
             if int(_at) > today_uix:
                 item.setBackground(QColor('silver'))
             self.listWidget.addItem(item)

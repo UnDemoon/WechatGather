@@ -41,6 +41,12 @@ class Ui_MainWindow(object):
         self.checkBox = QtWidgets.QCheckBox(self.centralwidget)
         self.checkBox.setObjectName("checkBox")
         self.horizontalLayout_2.addWidget(self.checkBox)
+        self.pushButton_5 = QtWidgets.QPushButton(self.centralwidget)
+        self.pushButton_5.setStyleSheet("background-color: #e45151;\n"
+"            color: white;\n"
+"            border-color: white;")
+        self.pushButton_5.setObjectName("pushButton_5")
+        self.horizontalLayout_2.addWidget(self.pushButton_5)
         self.pushButton_3 = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton_3.setObjectName("pushButton_3")
         self.horizontalLayout_2.addWidget(self.pushButton_3)
@@ -78,6 +84,7 @@ class Ui_MainWindow(object):
         self.Label_2.setText(_translate("MainWindow", "开始"))
         self.Label.setText(_translate("MainWindow", "结束"))
         self.checkBox.setText(_translate("MainWindow", "自动采集"))
+        self.pushButton_5.setText(_translate("MainWindow", "删除"))
         self.pushButton_3.setText(_translate("MainWindow", "清空"))
         self.pushButton_4.setText(_translate("MainWindow", "全选"))
         self.pushButton_2.setText(_translate("MainWindow", "跳过"))
