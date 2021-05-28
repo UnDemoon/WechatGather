@@ -121,6 +121,7 @@ class GameweixinGather(object):
                 }
             temp = self._channelData(param_data, item)
             res_list += temp
+            mytools.randomSleep()
         return res_list
 
     #   设置session
@@ -137,7 +138,7 @@ class GameweixinGather(object):
     #   _get 方法
     def _get(self, url, para):
         res = self._subGet(url, para)
-        while (res.get('errcode') != 0):
+        while res.get('errcode') != 0:
             mytools.randomSleep()
             res = self._subGet(url, para)
         return res

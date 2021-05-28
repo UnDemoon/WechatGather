@@ -5,31 +5,33 @@
 @Autor: Demoon
 @Date: 1970-01-01 08:00:00
 LastEditors: Please set LastEditors
-LastEditTime: 2021-02-19 17:03:49
+LastEditTime: 2021-02-20 10:25:09
 '''
 #  基础模块
 import sys
 import time
-import logging
+
 #   qt5
 from PyQt5 import QtWidgets
 from PyQt5.Qt import QThread
 from PyQt5.QtCore import QDate, Qt, QDateTime
 from PyQt5.QtGui import QColor
-#   引入ui文件
-from home import Ui_MainWindow as Ui
-#   引入浏览器线程类
-from MyBrowser import MyBrowser
-#   引入api类
-from HouyiApi import HouyiApi as Api
-#   引入采集类
-from GameweixinGather import GameweixinGather as GameGather
-#   DB类
-from MyDb import MyDb
+
 #   信号类集合
 import mySignals as MySigs
 #   工具集
 import utils as myTools
+#   引入采集类
+from GameweixinGather import GameweixinGather as GameGather
+#   引入api类
+from HouyiApi import HouyiApi as Api
+#   引入浏览器线程类
+from MyBrowser import MyBrowser
+#   DB类
+from MyDb import MyDb
+#   引入ui文件
+from home import Ui_MainWindow as Ui
+
 
 # logging.basicConfig(level=0)
 
@@ -133,7 +135,7 @@ class MyApp(QtWidgets.QMainWindow, Ui):
             item = QtWidgets.QListWidgetItem()
             update_time = myTools.unixTimeDate(_at)
             _url = 'https://game.weixin.qq.com/cgi-bin/minigame/static/channel_side/index.html?appid='+_appid
-            item.setData(2, _url)
+            item.setData(99, _url)
             item.setData(1, _id)
             item.setText(str(idx+1)+"    "+_name+"    "+_url+"    "+update_time.toString('yyyy-MM-dd HH:mm:ss'))
             item.setCheckState(Qt.CheckState(2))
@@ -160,7 +162,7 @@ class MyApp(QtWidgets.QMainWindow, Ui):
             items_len = self.listWidget.count()
             for index in range(0, items_len):
                 if self.listWidget.item(index).checkState() == Qt.CheckState(2):
-                    select_list.append(self.listWidget.item(index).data(1))
+                    select_list.append(self.listWidget.item(index).data(99))
             self.run_urls = select_list
             init_url = self.run_urls.pop()
         #   定义信号 链接槽函数
