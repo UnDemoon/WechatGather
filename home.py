@@ -60,12 +60,15 @@ class Ui_MainWindow(object):
         self.pushButton.setObjectName("pushButton")
         self.horizontalLayout_2.addWidget(self.pushButton)
         self.verticalLayout.addLayout(self.horizontalLayout_2)
+        self.label_2 = QtWidgets.QLabel(self.centralwidget)
+        self.label_2.setObjectName("label_2")
+        self.verticalLayout.addWidget(self.label_2)
+        self.lineEdit_search = QtWidgets.QLineEdit(self.centralwidget)
+        self.lineEdit_search.setObjectName("lineEdit_search")
+        self.verticalLayout.addWidget(self.lineEdit_search)
         self.label = QtWidgets.QLabel(self.centralwidget)
         self.label.setObjectName("label")
         self.verticalLayout.addWidget(self.label)
-        self.lineEdit = QtWidgets.QLineEdit(self.centralwidget)
-        self.lineEdit.setObjectName("lineEdit")
-        self.verticalLayout.addWidget(self.lineEdit)
         self.listWidget = QtWidgets.QListWidget(self.centralwidget)
         self.listWidget.setObjectName("listWidget")
         self.verticalLayout.addWidget(self.listWidget)
@@ -80,7 +83,7 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "微信小游戏采集"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "微信卖量采集"))
         self.Label_2.setText(_translate("MainWindow", "开始"))
         self.Label.setText(_translate("MainWindow", "结束"))
         self.checkBox.setText(_translate("MainWindow", "自动采集"))
@@ -89,4 +92,5 @@ class Ui_MainWindow(object):
         self.pushButton_4.setText(_translate("MainWindow", "全选"))
         self.pushButton_2.setText(_translate("MainWindow", "跳过"))
         self.pushButton.setText(_translate("MainWindow", "开始"))
+        self.label_2.setText(_translate("MainWindow", "搜索"))
         self.label.setText(_translate("MainWindow", "采集记录"))

@@ -1,4 +1,4 @@
-'''
+"""
 @Description:
 
 @Version: 1.0
@@ -6,7 +6,7 @@
 @Date: 1970-01-01 08:00:00
 LastEditors: Please set LastEditors
 LastEditTime: 2021-02-20 10:25:09
-'''
+"""
 #  基础模块
 import sys
 import time
@@ -20,7 +20,7 @@ from PyQt5.QtGui import QColor
 #   信号类集合
 import mySignals as MySigs
 #   工具集
-import utils as myTools
+import utils as mytools
 #   引入采集类
 from GameweixinGather import GameweixinGather as GameGather
 #   引入api类
@@ -48,12 +48,13 @@ class MyApp(QtWidgets.QMainWindow, Ui):
         self.bar_note = None
         self.browser = None
         self.run_urls = []  # 要采集的url集合
-        self.threadPools = []   # 线程池
-        self.sig = MySigs.ChangeUrlSignal()     # 改变url信号
+        self.threadPools = []  # 线程池
+        self.sig_change_url = MySigs.ChangeUrlSignal()  # 改变url信号
         # 方法
-        self._initdata()
-        self.listWidget.itemClicked.connect(self._onoffCheck)
+        self._initData()
+        self.listWidget.itemClicked.connect(self._onOffCheck)
         self.DateEdit.dateChanged.connect(self._timeInit)
+        self.lineEdit_search.textChanged.connect(self._search)
         self.pushButton_3.clicked.connect(lambda: self._changeAllCheck(0))
         self.pushButton_4.clicked.connect(lambda: self._changeAllCheck(2))
         self.pushButton_5.clicked.connect(self._delChecked)
@@ -61,18 +62,19 @@ class MyApp(QtWidgets.QMainWindow, Ui):
         self.pushButton.clicked.connect(self.start_run)
 
     #   数据初始化
-    def _initdata(self):
+    def _initData(self):
         today = QDate.currentDate()
         self.DateEdit.setDate(today)
         self.DateEdit.setCalendarPopup(True)
         self.DateEdit_2.setDate(today.addDays(-5))
         self.DateEdit_2.setEnabled(False)
+        self.checkBox.setCheckState(2)
         self._synDb()
 
     #   时间处理
     def _timeInit(self):
-        endDate = self.DateEdit.date()
-        self.DateEdit_2.setDate(endDate.addDays(-5))
+        end_date = self.DateEdit.date()
+        self.DateEdit_2.setDate(end_date.addDays(-5))
 
     #   清楚所有选项 0全不选 2全选
     def _changeAllCheck(self, check_state: int):
@@ -106,10 +108,11 @@ class MyApp(QtWidgets.QMainWindow, Ui):
     def _search(self, text: str):
         item_list = self.listWidget.findItems(text, Qt.MatchContains)
         if len(item_list) > 0:
-            self.listWidget.scrollToItem(item_list[0],  QtWidgets.QAbstractItemView.PositionAtTop)
+            self.listWidget.scrollToItem(item_list[0], QtWidgets.QAbstractItemView.PositionAtTop)
 
     # 处理点击
-    def _onoffCheck(self, click_item: QtWidgets.QListWidgetItem):
+    @staticmethod
+    def _onOffCheck(click_item: QtWidgets.QListWidgetItem):
         state = 2 if int(click_item.checkState()) == 0 else 0
         click_item.setCheckState(Qt.CheckState(state))
         return True
@@ -128,31 +131,34 @@ class MyApp(QtWidgets.QMainWindow, Ui):
                 url
             ORDER BY
             `id` ASC
-            '''
+            '''.format(today_uix)
         log_list = self.db.runSqlRes(sql)
         for idx, log in enumerate(log_list):
             _id, _name, _appid, _at = log
             item = QtWidgets.QListWidgetItem()
-            update_time = myTools.unixTimeDate(_at)
-            _url = 'https://game.weixin.qq.com/cgi-bin/minigame/static/channel_side/index.html?appid='+_appid
+            update_time = mytools.unixTimeDate(_at)
+            _url = 'https://game.weixin.qq.com/cgi-bin/minigame/static/channel_side/index.html?appid=' + _appid
             item.setData(99, _url)
             item.setData(1, _id)
-            item.setText(str(idx+1)+"    "+_name+"    "+_url+"    "+update_time.toString('yyyy-MM-dd HH:mm:ss'))
-            item.setCheckState(Qt.CheckState(2))
+            item.setText(
+                str(idx) + "    " + _name + "   " + _url + "    " + update_time.toString('yyyy-MM-dd HH:mm:ss'))
             if int(_at) > today_uix:
                 item.setBackground(QColor('silver'))
+                item.setCheckState(Qt.CheckState(0))
+            else:
+                item.setCheckState(Qt.CheckState(2))
             self.listWidget.addItem(item)
         # self._barInfo("今日采集总计", str(len(log_list)))
 
     #   下一个
     def _nextUrl(self, url: str):
-        self.sig.changeUrl.emit(url)
+        self.sig_change_url.changeUrl.emit(url)
 
     #   按钮触发
     def start_run(self):
         self.run_urls = []
         if self.browser:
-            self.browser.closeBrower()
+            self.browser.closeBrowser()
         init_url = ''
         #   获取时间
         dates = (self.DateEdit_2.date(), self.DateEdit.date())
@@ -166,10 +172,10 @@ class MyApp(QtWidgets.QMainWindow, Ui):
             self.run_urls = select_list
             init_url = self.run_urls.pop()
         #   定义信号 链接槽函数
-        sigGetCookies = MySigs.GetCookiesSignal()
-        sigGetCookies.getCookies.connect(self._getCookiesListener)
-        self.browser = MyBrowser(sigGetCookies, dates, init_url)
-        self.sig.changeUrl.connect(self.browser.changeUrl)
+        sig_get_cookies = MySigs.GetCookiesSignal()
+        sig_get_cookies.getCookies.connect(self._getCookiesListener)
+        self.browser = MyBrowser(sig_get_cookies, dates, init_url)
+        self.sig_change_url.changeUrl.connect(self.browser.changeUrl)
         self.browser.start()
 
     #   自动运行
@@ -203,7 +209,8 @@ class MyApp(QtWidgets.QMainWindow, Ui):
     def _getCookiesListener(self, info: dict):
         gather = GatherThread(info['appid'], info['cookies'], info['dates'], info['url'])
         self.threadPools.append(gather)
-        gather.sig.completed.connect(self._completedListener)
+        gather.sig_show_info.showInfo.connect(lambda: self.bar_note)
+        gather.sig_completion.completed.connect(self._completedListener)
         gather.start()
 
     #   完成监听
@@ -216,9 +223,9 @@ class MyApp(QtWidgets.QMainWindow, Ui):
         app_name = ''
         #   查询appid对应游戏名称
         res = self.api.up('adv_apps', [parm['appid']])
-        for app in res['Result']['List']:
-            if app['wx_appid'] == parm['appid']:
-                app_name = app['name']
+        for app_info in res['Result']['List']:
+            if app_info['wx_appid'] == parm['appid']:
+                app_name = app_info['name']
         sql = '''
         SELECT
             *
@@ -229,14 +236,12 @@ class MyApp(QtWidgets.QMainWindow, Ui):
         '''.format(url)
         log_list = self.db.runSqlRes(sql)
         if len(log_list) <= 0:
-            now = QDateTime.currentDateTime()
-            unix_time = now.toSecsSinceEpoch()
+            unix_time = QDateTime.currentDateTime().toSecsSinceEpoch()
             self.db.saveItem([(app_name, parm['appid'], str(unix_time))], 'run_log')
             self._synDb()
         else:
             _id = log_list[0][0]
-            now = QDateTime.currentDateTime()
-            unix_time = now.toSecsSinceEpoch()
+            unix_time = QDateTime.currentDateTime().toSecsSinceEpoch()
             sql = '''
             UPDATE run_log
             SET app_name = '{0}',
@@ -249,7 +254,8 @@ class MyApp(QtWidgets.QMainWindow, Ui):
         self.autoRun()
 
     #   在bar上显示信息
-    def _barInfo(self, title: str = "", content: str = ""):
+    def _barInfo(self, title: str = ""):
+        content = ''
         if not title and not content:
             self.statusBar.clearMessage()
             if self.bar_note:
@@ -271,15 +277,16 @@ class GatherThread(QThread):
         self.cookies = cookies
         self.dateAry = dateary
         self.url = url
-        self.sig = MySigs.CompletionSignal()
+        self.sig_completion = MySigs.CompletionSignal()
+        self.sig_show_info = MySigs.ShowInfoSignal()
 
     def run(self):
         api = Api()
         #   数据采集
-        gameGather = GameGather(self.appid, self.cookies, self.dateAry)
-        data = gameGather.startRun()
+        game_gather = GameGather(self.appid, self.cookies, self.dateAry, self.sig_show_info)
+        data = game_gather.startRun()
         api.up('add_gamedata', data)
-        self.sig.completed.emit({
+        self.sig_completion.completed.emit({
             'url': self.url,
             'appid': self.appid,
         })

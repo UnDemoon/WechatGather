@@ -1,4 +1,4 @@
-'''
+"""
 @Description:   自定义信号
 
 @Version: 1.0
@@ -6,7 +6,7 @@
 @Date: 1970-01-01 08:00:00
 @LastEditors: Demoon
 @LastEditTime: 2020-07-01 11:13:46
-'''
+"""
 from PyQt5.QtCore import pyqtSignal, QObject
 
 
@@ -23,3 +23,8 @@ class GetCookiesSignal(QObject):
 #   改变url信号
 class ChangeUrlSignal(QObject):
     changeUrl = pyqtSignal(str)
+
+
+#   信息信号
+class ShowInfoSignal(QObject):
+    showInfo = pyqtSignal(str)

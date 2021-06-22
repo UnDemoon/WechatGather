@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>微信小游戏采集</string>
+   <string>微信卖量采集</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QHBoxLayout" name="horizontalLayout">
@@ -93,14 +93,21 @@
        </layout>
       </item>
       <item>
+       <widget class="QLabel" name="label_2">
+        <property name="text">
+         <string>搜索</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLineEdit" name="lineEdit_search"/>
+      </item>
+      <item>
        <widget class="QLabel" name="label">
         <property name="text">
          <string>采集记录</string>
         </property>
        </widget>
-      </item>
-      <item>
-       <widget class="QLineEdit" name="lineEdit"/>
       </item>
       <item>
        <widget class="QListWidget" name="listWidget"/>

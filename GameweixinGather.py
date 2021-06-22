@@ -1,28 +1,30 @@
-'''
+"""
 @Description: 数据采集类
 @Version: 1.0
 @Autor: Demoon
 @Date: 1970-01-01 08:00:00
 @LastEditors: Demoon
 @LastEditTime: 2020-07-01 11:36:41
-'''
+"""
 import json
 import requests
 import time
 # import urllib
 import utils as mytools
+import mySignals as MySigs
 
 
 class GameweixinGather(object):
-    def __init__(self, appid: str, cookie: dict, dateAry: tuple):
+    def __init__(self, appid: str, cookie: dict, date_ary: tuple, sig_show_info: MySigs.ShowInfoSignal):
         super(GameweixinGather, self).__init__()
-        self.dateAry = dateAry
+        self.dateAry = date_ary
         self.appid = appid
+        self.sig_show_info = sig_show_info
         self.colloct_conf = {
             #   渠道列表接口
             "perm_list": {
                 "url":
-                "https://game.weixin.qq.com/cgi-bin/gamewxagchannelwap/getsharepermuserinfo",
+                    "https://game.weixin.qq.com/cgi-bin/gamewxagchannelwap/getsharepermuserinfo",
                 "params": {
                     "appid": self.appid,
                     "needLogin": "true",
@@ -36,7 +38,7 @@ class GameweixinGather(object):
             #    渠道数据
             "channel_share_data": {
                 "url":
-                "https://game.weixin.qq.com/cgi-bin/gamewxagchannelwap/getwxagstatcustomchannelsharedata",
+                    "https://game.weixin.qq.com/cgi-bin/gamewxagchannelwap/getwxagstatcustomchannelsharedata",
                 "params": {
                     "data": "",
                     "needLogin": "true",
@@ -68,64 +70,65 @@ class GameweixinGather(object):
         duration_seconds = enduix - staruix
         for item in channel_list:
             param_data = {
-                    "need_app_info": True,
-                    "appid": self.appid,
-                    "sequence_index_list": [
-                        {
-                            "size_type": 24,
-                            "stat_type": 1000088,
-                            "data_field_id": 6,
-                            "time_period": {
-                                "start_time": staruix,
-                                "duration_seconds": duration_seconds
-                            },
-                            "filter_list": [
-                                {
-                                    "name": item.get("channel_name"),
-                                    "field_id": 5,
-                                    "value": item.get("out_channel_id"),
-                                },
-                                {
-                                    "field_id": 4,
-                                    "value": item.get("out_group_id"),
-                                }
-                            ],
-                            "requestType": "sequence"
+                "need_app_info": True,
+                "appid": self.appid,
+                "sequence_index_list": [
+                    {
+                        "size_type": 24,
+                        "stat_type": 1000088,
+                        "data_field_id": 6,
+                        "time_period": {
+                            "start_time": staruix,
+                            "duration_seconds": duration_seconds
                         },
-                        {
-                            "size_type": 24,
-                            "stat_type": 1000088,
-                            "data_field_id": 6,
-                            "time_period": {
-                                "start_time": staruix,
-                                "duration_seconds": duration_seconds
+                        "filter_list": [
+                            {
+                                "name": item.get("channel_name"),
+                                "field_id": 5,
+                                "value": item.get("out_channel_id"),
                             },
-                            "requestType": "sequence",
-                            "filter_list": [
-                                {
-                                    "name": item.get("channel_name"),
-                                    "field_id": 5,
-                                    "value": item.get("out_channel_id"),
-                                },
-                                {
-                                    "field_id": 4,
-                                    "value": item.get("out_group_id"),
-                                }
-                            ]
-                        }
-                    ],
-                    "group_index_list": [],
-                    "rank_index_list": [],
-                    "table_index_list": [],
-                    "version": 0
-                }
+                            {
+                                "field_id": 4,
+                                "value": item.get("out_group_id"),
+                            }
+                        ],
+                        "requestType": "sequence"
+                    },
+                    {
+                        "size_type": 24,
+                        "stat_type": 1000088,
+                        "data_field_id": 6,
+                        "time_period": {
+                            "start_time": staruix,
+                            "duration_seconds": duration_seconds
+                        },
+                        "requestType": "sequence",
+                        "filter_list": [
+                            {
+                                "name": item.get("channel_name"),
+                                "field_id": 5,
+                                "value": item.get("out_channel_id"),
+                            },
+                            {
+                                "field_id": 4,
+                                "value": item.get("out_group_id"),
+                            }
+                        ]
+                    }
+                ],
+                "group_index_list": [],
+                "rank_index_list": [],
+                "table_index_list": [],
+                "version": 0
+            }
             temp = self._channelData(param_data, item)
             res_list += temp
             mytools.randomSleep()
         return res_list
 
     #   设置session
-    def _setSession(self, ck: dict, hd: dict):
+    @staticmethod
+    def _setSession(ck: dict, hd: dict):
         #   配置requests session
         sess = requests.session()  # 新建session
         c = requests.cookies.RequestsCookieJar()  # 添加cookies到CookieJar
@@ -145,6 +148,7 @@ class GameweixinGather(object):
 
     #   _get子方法
     def _subGet(self, url, para):
+        self.sig_show_info.showInfo.emit('111')
         t = time.time()
         para['timestamp'] = str(int(round(t * 1000)))
         res = {}
@@ -180,5 +184,5 @@ class GameweixinGather(object):
             'out_group_id': info.get('out_group_id'),
             'out_channel_id': info.get('out_channel_id'),
             'channel_name': info.get('channel_name'),
-            }, res)
+        }, res)
         return res

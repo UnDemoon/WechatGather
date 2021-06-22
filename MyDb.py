@@ -4,9 +4,9 @@ import sqlite3
 class MyDb(object):
     def __init__(self):
         self.db = sqlite3.connect("./rundb.db")
-        self._tableinit()
+        self._tableInit()
 
-    def _tableinit(self):
+    def _tableInit(self):
         cursor = self.db.cursor()
         try:
             create_tb_cmd = '''
@@ -32,8 +32,7 @@ class MyDb(object):
             {0}
                 '''.format(tbl_name)
         res = cursor.execute(sql)
-        querys = res.fetchall()
-        return querys
+        return res.fetchall()
 
     def saveItem(self, data: list, tbl_name: str = 'app_info'):
         cursor = self.db.cursor()
@@ -57,10 +56,9 @@ class MyDb(object):
             {1} {2} '{3}'
                 '''.format(tbl_name, key, condition, value)
         res = cursor.execute(sql)
-        querys = res.fetchall()
-        return querys
+        return res.fetchall()
 
-    def delect(self, key: str, value: str, tbl_name: str = 'app_info'):
+    def delete(self, key: str, value: str, tbl_name: str = 'app_info'):
         cursor = self.db.cursor()
         sql = '''
         DELETE
@@ -88,8 +86,7 @@ class MyDb(object):
     def runSqlRes(self, sql_str: str):
         cursor = self.db.cursor()
         res = cursor.execute(sql_str)
-        querys = res.fetchall()
-        return querys
+        return res.fetchall()
 
     #   无结果提交
     def runSql(self, sql_str: str):
