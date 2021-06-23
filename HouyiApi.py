@@ -1,11 +1,11 @@
-'''
-@Description: 
+"""
+@Description:
 @Version: 1.0
 @Autor: Demoon
 @Date: 1970-01-01 08:00:00
 @LastEditors: Demoon
 @LastEditTime: 2020-06-12 10:24:36
-'''
+"""
 import requests
 import json
 import time

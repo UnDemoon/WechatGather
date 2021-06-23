@@ -6,7 +6,7 @@ from PyQt5.QtCore import QDateTime, QDate, QTime
 
 
 #   随机间隔
-def randomSleep(limit_t: float = 1.2, max_t: float = 1.8):
+def randomSleep(limit_t: float = 0.6, max_t: float = 1.5):
     ret = random.uniform(limit_t, max_t)
     time.sleep(ret)
 

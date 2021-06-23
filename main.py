@@ -207,11 +207,14 @@ class MyApp(QtWidgets.QMainWindow, Ui):
 
     #   获取cookies监听
     def _getCookiesListener(self, info: dict):
-        gather = GatherThread(info['appid'], info['cookies'], info['dates'], info['url'])
-        self.threadPools.append(gather)
-        gather.sig_show_info.showInfo.connect(lambda: self.bar_note)
-        gather.sig_completion.completed.connect(self._completedListener)
-        gather.start()
+        if not info:
+            self.autoRun()
+        else:
+            gather = GatherThread(info['appid'], info['cookies'], info['dates'], info['url'])
+            self.threadPools.append(gather)
+            gather.sig_show_info.showInfo.connect(lambda: self.bar_note)
+            gather.sig_completion.completed.connect(self._completedListener)
+            gather.start()
 
     #   完成监听
     # parm = {

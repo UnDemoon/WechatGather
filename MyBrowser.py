@@ -26,7 +26,6 @@ class MyBrowser(QThread):
 
     #   下一个url
     def changeUrl(self, url: str):
-        # print("changeUrl", url)
         self.browser.get(url)
 
     #   run
@@ -41,12 +40,12 @@ class MyBrowser(QThread):
     #   等待登录
     def waitLogin(self, browser):
         #   长等待获取是否获取用户名
-        long_wait = WebDriverWait(browser, 60 * 1)
+        long_wait = WebDriverWait(browser, 30 * 1)
         try:
             long_wait.until(
                 EC.presence_of_element_located(
                     (By.CSS_SELECTOR, '.tips-wrap')))
-                    # (By.CSS_SELECTOR, '.header__logo')))  # 测试用
+            # (By.CSS_SELECTOR, '.header__logo')))  # 测试用
             cookies = browser.get_cookies()
             url_param = mytools.urlParam(browser.current_url)
             self.sig.getCookies.emit({
@@ -58,6 +57,14 @@ class MyBrowser(QThread):
             browser.get("data:,")
         except BaseException:
             pass
+        #   找寻无权限标识
+        try:
+            warning_no_permission = browser.find_element_by_css_selector(
+                '.weui-desktop-msg.weui-desktop-msg_mini.weui-desktop-msg_temp-warn')
+            if warning_no_permission:
+                self.sig.getCookies.emit({})
+        except BaseException:
+            pass
         return True
 
     #   关闭
@@ -67,7 +74,7 @@ class MyBrowser(QThread):
 
     #   浏览器初始化
     @staticmethod
-    def browserInit():      # 实例化一个chrome浏览器
+    def browserInit():  # 实例化一个chrome浏览器
         chrome_options = webdriver.ChromeOptions()
         # options.add_argument(".\ChromePortable\App\Chrome\chrome.exe");
         chrome_options.binary_location = ".\\ChromePortable\\App\\Chrome\\chrome.exe"
