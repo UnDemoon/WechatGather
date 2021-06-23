@@ -281,12 +281,11 @@ class GatherThread(QThread):
         self.dateAry = dateary
         self.url = url
         self.sig_completion = MySigs.CompletionSignal()
-        self.sig_show_info = MySigs.ShowInfoSignal()
 
     def run(self):
         api = Api()
         #   数据采集
-        game_gather = GameGather(self.appid, self.cookies, self.dateAry, self.sig_show_info)
+        game_gather = GameGather(self.appid, self.cookies, self.dateAry)
         data = game_gather.startRun()
         api.up('add_gamedata', data)
         self.sig_completion.completed.emit({

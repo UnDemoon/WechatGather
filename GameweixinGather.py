@@ -7,19 +7,19 @@
 @LastEditTime: 2020-07-01 11:36:41
 """
 import json
-import requests
 import time
+
+import requests
+
 # import urllib
 import utils as mytools
-import mySignals as MySigs
 
 
 class GameweixinGather(object):
-    def __init__(self, appid: str, cookie: dict, date_ary: tuple, sig_show_info: MySigs.ShowInfoSignal):
+    def __init__(self, appid: str, cookie: dict, date_ary: tuple):
         super(GameweixinGather, self).__init__()
         self.dateAry = date_ary
         self.appid = appid
-        self.sig_show_info = sig_show_info
         self.colloct_conf = {
             #   渠道列表接口
             "perm_list": {
@@ -148,7 +148,6 @@ class GameweixinGather(object):
 
     #   _get子方法
     def _subGet(self, url, para):
-        self.sig_show_info.showInfo.emit('111')
         t = time.time()
         para['timestamp'] = str(int(round(t * 1000)))
         res = {}

@@ -24,7 +24,3 @@ class GetCookiesSignal(QObject):
 class ChangeUrlSignal(QObject):
     changeUrl = pyqtSignal(str)
 
-
-#   信息信号
-class ShowInfoSignal(QObject):
-    showInfo = pyqtSignal(str)
