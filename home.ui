@@ -45,6 +45,9 @@
        <layout class="QHBoxLayout" name="horizontalLayout_2">
         <item>
          <widget class="QCheckBox" name="checkBox">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="text">
            <string>自动采集</string>
           </property>
@@ -77,13 +80,6 @@
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="pushButton_2">
-          <property name="text">
-           <string>跳过</string>
-          </property>
-         </widget>
-        </item>
-        <item>
          <widget class="QPushButton" name="pushButton">
           <property name="text">
            <string>开始</string>
@@ -93,19 +89,23 @@
        </layout>
       </item>
       <item>
-       <widget class="QLabel" name="label_2">
-        <property name="text">
-         <string>搜索</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QLineEdit" name="lineEdit_search"/>
+       <layout class="QHBoxLayout" name="horizontalLayout_3">
+        <item>
+         <widget class="QLineEdit" name="lineEdit_search"/>
+        </item>
+        <item>
+         <widget class="QPushButton" name="pushButton_addurl">
+          <property name="text">
+           <string>添加链接</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </item>
       <item>
        <widget class="QLabel" name="label">
         <property name="text">
-         <string>采集记录</string>
+         <string>采集链接</string>
         </property>
        </widget>
       </item>

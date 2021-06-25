@@ -9,12 +9,15 @@ LastEditTime: 2021-02-20 10:25:09
 """
 #  基础模块
 import sys
+import threading
 import time
 
 #   qt5
+import random
+
 from PyQt5 import QtWidgets
-from PyQt5.Qt import QThread
-from PyQt5.QtCore import QDate, Qt, QDateTime
+from PyQt5.Qt import QThread, QThreadPool, QRunnable
+from PyQt5.QtCore import QDate, Qt, QDateTime, QObject
 from PyQt5.QtGui import QColor
 
 #   信号类集合
@@ -48,17 +51,16 @@ class MyApp(QtWidgets.QMainWindow, Ui):
         self.bar_note = None
         self.browser = None
         self.run_urls = []  # 要采集的url集合
-        self.threadPools = []  # 线程池
+        self.threadPools = QThreadPool.globalInstance()  # 线程池
         self.sig_change_url = MySigs.ChangeUrlSignal()  # 改变url信号
         # 方法
         self._initData()
         self.listWidget.itemClicked.connect(self._onOffCheck)
         self.DateEdit.dateChanged.connect(self._timeInit)
-        self.lineEdit_search.textChanged.connect(self._search)
         self.pushButton_3.clicked.connect(lambda: self._changeAllCheck(0))
         self.pushButton_4.clicked.connect(lambda: self._changeAllCheck(2))
+        self.pushButton_addurl.clicked.connect(self._addUrl)
         self.pushButton_5.clicked.connect(self._delChecked)
-        self.pushButton_2.clicked.connect(self.autoRun)
         self.pushButton.clicked.connect(self.start_run)
 
     #   数据初始化
@@ -148,7 +150,6 @@ class MyApp(QtWidgets.QMainWindow, Ui):
             else:
                 item.setCheckState(Qt.CheckState(2))
             self.listWidget.addItem(item)
-        # self._barInfo("今日采集总计", str(len(log_list)))
 
     #   下一个
     def _nextUrl(self, url: str):
@@ -170,13 +171,53 @@ class MyApp(QtWidgets.QMainWindow, Ui):
                 if self.listWidget.item(index).checkState() == Qt.CheckState(2):
                     select_list.append(self.listWidget.item(index).data(99))
             self.run_urls = select_list
-            init_url = self.run_urls.pop()
+            init_url = self.run_urls[-1]
         #   定义信号 链接槽函数
         sig_get_cookies = MySigs.GetCookiesSignal()
         sig_get_cookies.getCookies.connect(self._getCookiesListener)
         self.browser = MyBrowser(sig_get_cookies, dates, init_url)
         self.sig_change_url.changeUrl.connect(self.browser.changeUrl)
         self.browser.start()
+
+    #   链接添加
+    def _addUrl(self):
+        url = self.lineEdit_search.text()
+        appid = mytools.urlParam(url).get('appid')
+        if appid:
+            app_name = ''
+            #   查询appid对应游戏名称
+            res = self.api.up('adv_apps', [appid])
+            for app_info in res['Result']['List']:
+                if app_info['wx_appid'] == appid:
+                    app_name = app_info['name']
+            sql = '''
+            SELECT
+                *
+            FROM
+                run_log
+            WHERE
+                url = '{0}'
+            '''.format(appid)
+            log_list = self.db.runSqlRes(sql)
+            if len(log_list) <= 0:
+                unix_time = QDateTime.currentDateTime().toSecsSinceEpoch()
+                self.db.saveItem([(app_name, appid, str(unix_time))], 'run_log')
+                self._synDb()
+            else:
+                _id = log_list[0][0]
+                unix_time = QDateTime.currentDateTime().toSecsSinceEpoch()
+                sql = '''
+                UPDATE run_log
+                SET app_name = '{0}'
+                WHERE
+                    id = '{1}'
+                '''.format(app_name, _id)
+                self.db.runSql(sql)
+                self._synDb()
+                QtWidgets.QMessageBox.information(self, '提示', '链接已存在！', QtWidgets.QMessageBox.Yes)
+        else:
+            QtWidgets.QMessageBox.warning(self, '错误', '无效链接！', QtWidgets.QMessageBox.Yes)
+        self.lineEdit_search.setText('')
 
     #   自动运行
     def autoRun(self):
@@ -210,11 +251,18 @@ class MyApp(QtWidgets.QMainWindow, Ui):
         if not info:
             self.autoRun()
         else:
-            gather = GatherThread(info['appid'], info['cookies'], info['dates'], info['url'])
-            self.threadPools.append(gather)
-            gather.sig_show_info.showInfo.connect(lambda: self.bar_note)
-            gather.sig_completion.completed.connect(self._completedListener)
-            gather.start()
+            self.browser.closeBrowser()
+            #   线程限制信号量
+            self.threadPools.setMaxThreadCount(8)
+            while len(self.run_urls) > 0:
+                url_param = mytools.urlParam(self.run_urls.pop())
+                appid = url_param['appid']
+                gather = GatherThread(appid, info['cookies'], info['dates'], info['url'])
+                gather.sig_completion.completed.connect(self._completedListener)
+                self.threadPools.start(gather)
+            # for oneThread in self.threadPools:
+            #     oneThread.join()
+            # self.pool.waitForDone()  # 等待线程结束
 
     #   完成监听
     # parm = {
@@ -254,26 +302,10 @@ class MyApp(QtWidgets.QMainWindow, Ui):
             '''.format(app_name, unix_time, _id)
             self.db.runSql(sql)
             self._synDb()
-        self.autoRun()
-
-    #   在bar上显示信息
-    def _barInfo(self, title: str = ""):
-        content = ''
-        if not title and not content:
-            self.statusBar.clearMessage()
-            if self.bar_note:
-                self.statusBar.removeWidget(self.bar_note)
-        else:
-            self.statusBar.showMessage(title, 0)  # 状态栏本身显示的信息 第二个参数是信息停留的时间，单位是毫秒，默认是0（0表示在下一个操作来临前一直显示）
-            if self.bar_note:
-                self.bar_note.setText(content)
-            else:
-                self.bar_note = QtWidgets.QLabel(content)
-                self.statusBar.addPermanentWidget(self.bar_note, stretch=0)
 
 
 # 采集线程
-class GatherThread(QThread):
+class GatherThread(QRunnable):
     def __init__(self, appid: str, cookies: dict, dateary: tuple, url: str):
         super().__init__()
         self.appid = appid
